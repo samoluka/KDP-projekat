@@ -11,9 +11,9 @@ public class SetWorker implements Worker {
 
 	@Override
 	public HashMap<String, Integer> work(ObjectOutputStream out, ObjectInputStream in, HashMap<String, Integer> map)
-			throws IOException, Exception {
+			throws IOException, InterruptedException, ClassNotFoundException {
 		StocksMessage stocks = (StocksMessage) in.readObject();
-		System.out.println("Primio: " + stocks.toString());
+		// System.out.println("Primio: " + stocks.toString());
 		return stocks.getBody();
 	}
 

@@ -50,23 +50,25 @@ public class StocksServer implements Worker {
 		needUpdate.put(id, nu);
 //		UpdateStocks us = new UpdateStocks(nu, stocksOn, map, out, in, id, buff);
 //		us.start();
-		needBalancing.set(false);
+
 		synchronized (needBalancing) {
+			needBalancing.set(false);
 			numberOfStocksServers.incrementAndGet();
 			stocksOn.put(id, new LinkedList<String>());
 			rebalance(map, needBalancing, stocksOn, numberOfStocksServers);
 			needBalancing.set(true);
 			needBalancing.notifyAll();
 		}
+		AtomicBoolean available = new AtomicBoolean(true);
 		LoadBalancer lb = new LoadBalancer(needBalancing, balanceNumber, stocksOn, map, id, numberOfStocksServers, out,
-				in);
+				in, available);
 		lb.start();
 		synchronized (needBalancing) {
 			while (needBalancing.get()) {
 				needBalancing.wait();
 			}
 		}
-		int waitingTime = 10000;
+		int waitingTime = 500;
 		while (true) {
 			synchronized (needBalancing) {
 				while (needBalancing.get()) {
@@ -81,32 +83,47 @@ public class StocksServer implements Worker {
 				msg = (TextMessage) in.readObject();
 				if (!"OK DONE".equals(msg.getBody())) {
 					System.err.println("NESTO NIJE OK PREKIDAM PROGRAM");
-					return;
-				}
-				waitingTime = 10000;
-			} catch (IOException | ClassNotFoundException e) {
-				// e.printStackTrace();
-				System.err.println("Server nedostupan " + id);
-				if (waitingTime == 0) {
-					System.err.println("Server ugasen " + id);
-					numberOfStocksServers.decrementAndGet();
-					lb.interrupt();
-					lb.join();
+					available.set(false);
+					if (lb.isAlive()) {
+						lb.interrupt();
+						lb.join();
+					}
 					synchronized (needBalancing) {
 						stocksOn.remove(id);
 						rebalance(map, needBalancing, stocksOn, numberOfStocksServers);
 						needBalancing.set(true);
 						needBalancing.notifyAll();
 					}
-					break;
+					return;
+				}
+				available.set(true);
+				waitingTime = 500;
+			} catch (IOException | ClassNotFoundException e) {
+				// e.printStackTrace();
+				System.err.println("Server nedostupan " + id);
+				available.set(false);
+				if (waitingTime == 0) {
+					System.err.println("Server ugasen " + id);
+					numberOfStocksServers.decrementAndGet();
+					if (lb.isAlive()) {
+						lb.interrupt();
+						lb.join();
+					}
+					synchronized (needBalancing) {
+						stocksOn.remove(id);
+						rebalance(map, needBalancing, stocksOn, numberOfStocksServers);
+						needBalancing.set(true);
+						needBalancing.notifyAll();
+					}
+					System.out.println("GASIM STOCKSERVER NIT " + id);
+					return;
 				}
 				waitingTime /= 2;
 			} finally {
-				System.err.println("cekam vreme: " + waitingTime);
+				// System.err.println("cekam vreme: " + waitingTime);
 				Thread.sleep(waitingTime);
 			}
 		}
-		System.out.println("GASIM STOCKSERVER NIT " + id);
 	}
 
 }
