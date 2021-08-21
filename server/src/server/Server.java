@@ -19,6 +19,7 @@ public class Server {
 	private static AtomicInteger numberOfStocksServers = new AtomicInteger(0);
 	private static ConcurrentHashMap<Integer, AtomicBoolean> needUpdate = new ConcurrentHashMap<>();
 	private static MonitorAtomicBroadcastBuffer<String> buff = new MonitorAtomicBroadcastBuffer<>(1000);
+	private static AtomicInteger lookingFor = new AtomicInteger(0);
 
 	public static void main(String[] args) {
 
@@ -36,7 +37,7 @@ public class Server {
 			while (true) {
 				Socket client = server.accept();
 				new WorkingThread(client, stocks, id++, needBalancing, stocksOn, balanceNumber, numberOfStocksServers,
-						needUpdate, buff).start();
+						needUpdate, buff, lookingFor).start();
 			}
 
 		} catch (IOException e) {

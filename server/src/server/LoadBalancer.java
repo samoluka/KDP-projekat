@@ -14,6 +14,8 @@ import shared.TextMessage;
 
 public class LoadBalancer extends Thread {
 
+	private static AtomicBoolean finish = new AtomicBoolean(false);
+
 	private AtomicBoolean needBalance;
 	private ConcurrentHashMap<Integer, List<String>> stocksOn;
 	private ConcurrentHashMap<String, Integer> stocks;
@@ -23,11 +25,12 @@ public class LoadBalancer extends Thread {
 	private AtomicInteger numberOfStocksServers;
 	private ObjectOutputStream out;
 	private ObjectInputStream in;
+	private AtomicInteger lf;
 
 	public LoadBalancer(AtomicBoolean needBalance, AtomicInteger balanceNumber,
 			ConcurrentHashMap<Integer, List<String>> stocksOn, ConcurrentHashMap<String, Integer> stocks, int id,
-			AtomicInteger numberOfStocksServers, ObjectOutputStream out, ObjectInputStream in,
-			AtomicBoolean available) {
+			AtomicInteger numberOfStocksServers, ObjectOutputStream out, ObjectInputStream in, AtomicBoolean available,
+			AtomicInteger lookingFor) {
 		super();
 		this.needBalance = needBalance;
 		this.stocksOn = stocksOn;
@@ -38,44 +41,47 @@ public class LoadBalancer extends Thread {
 		this.in = in;
 		this.out = out;
 		this.available = available;
+		this.lf = lookingFor;
 	}
 
 	private void balance() throws InterruptedException, IOException, ClassNotFoundException {
 		synchronized (needBalance) {
-			if (balanceNumber.incrementAndGet() > this.numberOfStocksServers.get()) {
-				this.needBalance.set(false);
-				this.balanceNumber.set(0);
-				needBalance.notifyAll();
-				System.out.println("zavrseno balansiranje");
+			while (!needBalance.get()) {
+				System.out.println("cekam balansiranje " + id);
+				needBalance.wait();
+			}
+			finish.set(false);
+			System.out.println("krenuo balansiranje " + id);
+			HashMap<String, Integer> hm = new HashMap<>();
+			List<String> myStocks = this.stocksOn.get(id);
+			for (String stock : myStocks) {
+				hm.put(stock, stocks.get(stock));
+			}
+			StocksMessage stocksMsg = new StocksMessage(hm);
+			TextMessage msg = new TextMessage("stocksServer.SetWorker");
+			out.writeObject(msg);
+			out.writeObject(stocksMsg);
+			msg = (TextMessage) in.readObject();
+			if (!"OK DONE".equals(msg.getBody())) {
+				System.err.println("NESTO NIJE OK PREKIDAM PROGRAM");
 				return;
 			}
-			while (!needBalance.get()) {
-				needBalance.wait();
+//			System.out.println("nit " + id + " je zavrsila balansiranje sa brojevima: " + balanceNumber.get() + " "
+//					+ numberOfStocksServers.get());
+			if (balanceNumber.incrementAndGet() >= this.numberOfStocksServers.get()) {
+				needBalance.set(false);
+				balanceNumber.set(0);
+				needBalance.notifyAll();
+				synchronized (finish) {
+					finish.set(true);
+					finish.notifyAll();
+				}
+				System.out.println("zavrseno balansiranje");
 			}
-			if (this.available.get()) {
-				System.out.println("krenuo balansiranje " + id);
-				HashMap<String, Integer> hm = new HashMap<>();
-				List<String> myStocks = this.stocksOn.get(id);
-				for (String stock : myStocks) {
-					hm.put(stock, stocks.get(stock));
-				}
-				StocksMessage stocksMsg = new StocksMessage(hm);
-				TextMessage msg = new TextMessage("stocksServer.SetWorker");
-				out.writeObject(msg);
-				out.writeObject(stocksMsg);
-				msg = (TextMessage) in.readObject();
-				if (!"OK DONE".equals(msg.getBody())) {
-					System.err.println("NESTO NIJE OK PREKIDAM PROGRAM");
-					return;
-				}
-				if (balanceNumber.get() == this.numberOfStocksServers.get()) {
-					this.needBalance.set(false);
-					this.balanceNumber.set(0);
-					needBalance.notifyAll();
-					System.out.println("zavrseno balansiranje");
-				}
-				needBalance.wait();
-			}
+		}
+		synchronized (finish) {
+			while (!finish.get())
+				finish.wait();
 		}
 	}
 
@@ -89,7 +95,8 @@ public class LoadBalancer extends Thread {
 				e.printStackTrace();
 				return;
 			} catch (ClassNotFoundException | IOException e) {
-				// e.printStackTrace();
+				e.printStackTrace();
+				return;
 			}
 		}
 	}

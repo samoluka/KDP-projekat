@@ -20,7 +20,7 @@ public class Client implements Worker {
 			ConcurrentHashMap<String, Integer> map, int id, AtomicBoolean needBalancing,
 			ConcurrentHashMap<Integer, List<String>> stocksOn, AtomicInteger balanceNumber,
 			AtomicInteger numberOfStocksServers, ConcurrentHashMap<Integer, AtomicBoolean> needUpdate,
-			MonitorAtomicBroadcastBuffer<String> buff) throws IOException, Exception {
+			MonitorAtomicBroadcastBuffer<String> buff, AtomicInteger lf) throws IOException, Exception {
 
 		buff.addListener(id);
 		out.writeInt(id);
