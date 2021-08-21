@@ -16,5 +16,5 @@ public interface Worker {
 			ConcurrentHashMap<String, Integer> map, int id, AtomicBoolean needBalancing,
 			ConcurrentHashMap<Integer, List<String>> stocksOn, AtomicInteger balanceNumber,
 			AtomicInteger numberOfStocksServers, ConcurrentHashMap<Integer, AtomicBoolean> needUpdate,
-			MonitorAtomicBroadcastBuffer<String> buff) throws IOException, Exception;
+			MonitorAtomicBroadcastBuffer<String> buff, AtomicInteger lookingFor) throws IOException, Exception;
 }

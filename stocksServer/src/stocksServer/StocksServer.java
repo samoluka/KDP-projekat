@@ -84,6 +84,7 @@ public class StocksServer {
 			public void actionPerformed(ActionEvent e) {
 				// TODO Auto-generated method stub
 				kill.set(true);
+				System.out.println("SETOVAO KILL");
 				try {
 					wt.join();
 				} catch (InterruptedException e1) {

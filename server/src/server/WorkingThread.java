@@ -23,11 +23,12 @@ public class WorkingThread extends Thread {
 	private AtomicInteger numberOfStocksServers;
 	private ConcurrentHashMap<Integer, AtomicBoolean> needUpdate;
 	private MonitorAtomicBroadcastBuffer<String> buff;
+	private AtomicInteger lf;
 
 	public WorkingThread(Socket client, ConcurrentHashMap<String, Integer> stocks, int id, AtomicBoolean needBalancing,
 			ConcurrentHashMap<Integer, List<String>> stocksOn, AtomicInteger balanceNumber,
 			AtomicInteger numberOfStocksServers, ConcurrentHashMap<Integer, AtomicBoolean> needUpdate,
-			MonitorAtomicBroadcastBuffer<String> buff) {
+			MonitorAtomicBroadcastBuffer<String> buff, AtomicInteger lf) {
 		super();
 		this.client = client;
 		this.stocks = stocks;
@@ -38,6 +39,7 @@ public class WorkingThread extends Thread {
 		this.numberOfStocksServers = numberOfStocksServers;
 		this.needUpdate = needUpdate;
 		this.buff = buff;
+		this.lf = lf;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -55,7 +57,7 @@ public class WorkingThread extends Thread {
 			System.out.println(className);
 			Worker w = (Worker) Class.forName(className).getConstructor().newInstance();
 			w.work(client, out, in, stocks, id, needBalancing, stocksOn, balanceNumber, numberOfStocksServers,
-					needUpdate, buff);
+					needUpdate, buff, lf);
 		} catch (Exception e) {
 			// e.printStackTrace();
 		}

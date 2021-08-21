@@ -20,7 +20,7 @@ public class ClientUpdateStocks implements Worker {
 			ConcurrentHashMap<String, Integer> map, int id, AtomicBoolean needBalancing,
 			ConcurrentHashMap<Integer, List<String>> stocksOn, AtomicInteger balanceNumber,
 			AtomicInteger numberOfStocksServers, ConcurrentHashMap<Integer, AtomicBoolean> needUpdate,
-			MonitorAtomicBroadcastBuffer<String> buff) throws IOException, Exception {
+			MonitorAtomicBroadcastBuffer<String> buff, AtomicInteger lf) throws IOException, Exception {
 		while (true) {
 			String[] msg = ((TextMessage) in.readObject()).getBody().split(";");
 			map.put(msg[0], Integer.parseInt(msg[1]));
