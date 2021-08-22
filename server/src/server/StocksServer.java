@@ -70,7 +70,7 @@ public class StocksServer implements Worker {
 		AtomicBoolean available = new AtomicBoolean(true);
 		LoadBalancer lb = new LoadBalancer(needBalancing, balanceNumber, stocksOn, map, id, numberOfStocksServers, out,
 				in, available, lookingFor);
-		lb.setDaemon(false);
+		lb.setDaemon(true);
 		lb.start();
 //		synchronized (needBalancing) {
 //			while (needBalancing.get()) {

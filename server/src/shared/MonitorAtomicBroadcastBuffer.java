@@ -83,23 +83,23 @@ public class MonitorAtomicBroadcastBuffer<T> implements AtomicBroadcastBuffer<T>
 	@Override
 	public synchronized void addListener(int id) {
 		int t = head;
-		for (Entry<Integer, Integer> pair : tail.entrySet()) {
-			if (pair.getValue() > head) {
-				if (t > head && pair.getValue() < t || t < head) {
-					t = pair.getValue();
-				}
-			} else {
-				if (t > head) {
-					continue;
-				}
-				if (pair.getValue() < t) {
-					t = pair.getValue();
-				}
-			}
-		}
-		if (n == 0) {
-			t = 0;
-		}
+//		for (Entry<Integer, Integer> pair : tail.entrySet()) {
+//			if (pair.getValue() > head) {
+//				if (t > head && pair.getValue() < t || t < head) {
+//					t = pair.getValue();
+//				}
+//			} else {
+//				if (t > head) {
+//					continue;
+//				}
+//				if (pair.getValue() < t) {
+//					t = pair.getValue();
+//				}
+//			}
+//		}
+//		if (n == 0) {
+//			t = 0;
+//		}
 		Long maxTicket = (long) -1;
 		for (Entry<Integer, Long> pair : readNext.entrySet()) {
 			if (pair.getValue() > maxTicket) {
@@ -114,10 +114,12 @@ public class MonitorAtomicBroadcastBuffer<T> implements AtomicBroadcastBuffer<T>
 				counter[i] = n;
 			}
 		}
+		System.out.println("DODELJENO JE: " + tail.get(id) + " " + readNext.get(id));
 	}
 
 	@Override
 	public synchronized void removeListener(int id) {
+		System.out.println("Uklanjam lisnera");
 		n--;
 		// long r = readNext.get(id);
 		readNext.remove(id);

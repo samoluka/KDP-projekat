@@ -50,7 +50,7 @@ public class UpdateStocks extends Thread {
 			HashMap<String, Integer> hm = new HashMap<>();
 			List<String> myStocks = this.stocksOn.get(id);
 			for (String stock : myStocks) {
-				hm.put(stock, stocks.get(stock));
+				hm.put(stock, stocks.get(stock) * 2);
 			}
 			StocksMessage stocksMsg = new StocksMessage(hm);
 			try {
@@ -77,10 +77,11 @@ public class UpdateStocks extends Thread {
 			for (Entry<String, Integer> pair : stocks.entrySet()) {
 				// stocks.put(pair.getKey(), pair.getValue() * 2);
 				buff.put(pair.getKey() + ";" + pair.getValue());
+				stocks.put(pair.getKey(), (int) (pair.getValue() * 1.1));
 			}
-			System.out.println("UPDATE STOCKS");
+			// System.out.println("UPDATE STOCKS");
 			try {
-				sleep(10000);
+				sleep(1000);
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
