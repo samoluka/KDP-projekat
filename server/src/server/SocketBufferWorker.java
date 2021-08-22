@@ -36,12 +36,10 @@ public class SocketBufferWorker extends Thread {
 					buffer.put(msg);
 					out.writeObject("OK");
 					break;
-
 				case "get":
 					String item = buffer.get(id);
 					out.writeObject(item);
 					break;
-
 				default:
 					String ret = String.format("*** Operation %s not supported.", operation);
 					System.out.println(ret);

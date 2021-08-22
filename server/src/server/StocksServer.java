@@ -1,5 +1,12 @@
 package server;
 
+import static server.Server.balanceNumber;
+import static server.Server.lookingFor;
+import static server.Server.needBalancing;
+import static server.Server.numberOfStocksServers;
+import static server.Server.stocks;
+import static server.Server.stocksOn;
+
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -7,26 +14,21 @@ import java.net.Socket;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
-import shared.MonitorAtomicBroadcastBuffer;
 import shared.StocksMessage;
 import shared.TextMessage;
 
 public class StocksServer implements Worker {
 
-	private void rebalance(ConcurrentHashMap<String, Integer> map, AtomicBoolean needBalancing,
-			ConcurrentHashMap<Integer, List<String>> stocksOn, AtomicInteger numberOfStocksServers,
-			AtomicInteger balanceNumber) {
+	private void rebalance() {
 		HashMap<Integer, List<String>> hs = new HashMap<Integer, List<String>>();
-		List<String> stocks = new LinkedList<>();
-		stocks.addAll(map.keySet());
+		List<String> stocksList = new LinkedList<>();
+		stocksList.addAll(stocks.keySet());
 		int ind = 0;
 		int n = numberOfStocksServers.get();
-		int l = stocks.size() / n;
-		int ostatak = stocks.size() - l * n;
+		int l = stocksList.size() / n;
+		int ostatak = stocksList.size() - l * n;
 
 		for (Integer key : stocksOn.keySet()) {
 			int a = 0;
@@ -34,7 +36,6 @@ public class StocksServer implements Worker {
 				a = 1;
 				ostatak--;
 			}
-			hs.put(key, stocks.subList(ind, ind + l + a));
 			ind += (l + a);
 		}
 		stocksOn.putAll(hs);
@@ -45,11 +46,7 @@ public class StocksServer implements Worker {
 	}
 
 	@Override
-	public void work(Socket client, ObjectOutputStream out, ObjectInputStream in,
-			ConcurrentHashMap<String, Integer> map, int id, AtomicBoolean needBalancing,
-			ConcurrentHashMap<Integer, List<String>> stocksOn, AtomicInteger balanceNumber,
-			AtomicInteger numberOfStocksServers, ConcurrentHashMap<Integer, AtomicBoolean> needUpdate,
-			MonitorAtomicBroadcastBuffer<String> buff, AtomicInteger lookingFor) throws InterruptedException {
+	public void work(Socket client, ObjectOutputStream out, ObjectInputStream in, int id) throws InterruptedException {
 
 //		AtomicBoolean nu = new AtomicBoolean(false);
 //		needUpdate.put(id, nu);
@@ -61,15 +58,15 @@ public class StocksServer implements Worker {
 			numberOfStocksServers.incrementAndGet();
 			stocksOn.put(id, new LinkedList<String>());
 			if (lookingFor.get() == 0)
-				rebalance(map, needBalancing, stocksOn, numberOfStocksServers, balanceNumber);
+				rebalance();
 //			if (lookingFor.get() == 0) {
 //				needBalancing.set(true);
 //				needBalancing.notifyAll();
 //			}
 		}
 		AtomicBoolean available = new AtomicBoolean(true);
-		LoadBalancer lb = new LoadBalancer(needBalancing, balanceNumber, stocksOn, map, id, numberOfStocksServers, out,
-				in, available, lookingFor);
+		LoadBalancer lb = new LoadBalancer(needBalancing, balanceNumber, stocksOn, stocks, id, numberOfStocksServers,
+				out, in, available, lookingFor);
 		lb.setDaemon(true);
 		lb.start();
 //		synchronized (needBalancing) {
@@ -89,7 +86,7 @@ public class StocksServer implements Worker {
 			try {
 				out.writeObject(msg);
 				HashMap<String, Integer> hs = ((StocksMessage) in.readObject()).getBody();
-				map.putAll(hs);
+				stocks.putAll(hs);
 				msg = (TextMessage) in.readObject();
 				if (!"OK DONE".equals(msg.getBody())) {
 					System.err.println("NESTO NIJE OK PREKIDAM PROGRAM");
@@ -131,7 +128,7 @@ public class StocksServer implements Worker {
 						stocksOn.remove(id);
 						if (lookingFor.get() == 0) {
 							System.out.println("radim rebalans nit " + id);
-							rebalance(map, needBalancing, stocksOn, numberOfStocksServers, balanceNumber);
+							rebalance();
 //							balanceNumber.set(0);
 //							needBalancing.set(true);
 //							needBalancing.notifyAll();

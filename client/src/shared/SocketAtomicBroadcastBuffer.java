@@ -41,7 +41,7 @@ public class SocketAtomicBroadcastBuffer<T> implements AtomicBroadcastBuffer<T> 
 		try {
 			out.writeObject("get");
 			out.flush();
-//			out.writeInt(id);
+//			out.writeInt(id); 
 //			out.flush();
 			T item = (T) in.readObject();
 			return item;

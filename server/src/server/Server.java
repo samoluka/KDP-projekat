@@ -1,6 +1,8 @@
 package server;
 
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.List;
@@ -9,20 +11,23 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import shared.MonitorAtomicBroadcastBuffer;
+import shared.Pair;
 
 public class Server {
-	private static ConcurrentHashMap<String, Integer> stocks = new ConcurrentHashMap<>();
-	private static ConcurrentHashMap<Integer, List<String>> stocksOn = new ConcurrentHashMap<>();
+	static ConcurrentHashMap<String, Integer> stocks = new ConcurrentHashMap<>();
+	static ConcurrentHashMap<Integer, List<String>> stocksOn = new ConcurrentHashMap<>();
+	static AtomicBoolean needBalancing = new AtomicBoolean(true);
+	static AtomicInteger balanceNumber = new AtomicInteger(0);
+	static AtomicInteger numberOfStocksServers = new AtomicInteger(0);
+	static ConcurrentHashMap<Integer, AtomicBoolean> needUpdate = new ConcurrentHashMap<>();
+	static MonitorAtomicBroadcastBuffer<String> buff = new MonitorAtomicBroadcastBuffer<>(1000);
+	static AtomicInteger lookingFor = new AtomicInteger(0);
+	static ConcurrentHashMap<Integer, Pair<ObjectInputStream, ObjectOutputStream>> workerStreamMap = new ConcurrentHashMap<>();
+	static ConcurrentHashMap<Integer, String> transactionsActive = new ConcurrentHashMap<>();
+
 	private static int id = 1;
-	private static AtomicBoolean needBalancing = new AtomicBoolean(true);
-	private static AtomicInteger balanceNumber = new AtomicInteger(0);
-	private static AtomicInteger numberOfStocksServers = new AtomicInteger(0);
-	private static ConcurrentHashMap<Integer, AtomicBoolean> needUpdate = new ConcurrentHashMap<>();
-	private static MonitorAtomicBroadcastBuffer<String> buff = new MonitorAtomicBroadcastBuffer<>(1000);
-	private static AtomicInteger lookingFor = new AtomicInteger(0);
 
 	public static void main(String[] args) {
-
 		int port = Integer.parseInt(args[0]);
 
 		stocks.put("Stock A", 1000);
@@ -36,8 +41,7 @@ public class Server {
 			us.start();
 			while (true) {
 				Socket client = server.accept();
-				new WorkingThread(client, stocks, id++, needBalancing, stocksOn, balanceNumber, numberOfStocksServers,
-						needUpdate, buff, lookingFor).start();
+				new WorkingThread(client, id++).start();
 			}
 
 		} catch (IOException e) {

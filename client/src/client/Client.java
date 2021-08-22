@@ -4,6 +4,8 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.time.LocalDateTime;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.swing.BoxLayout;
@@ -13,6 +15,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.Timer;
 
 public class Client {
 	private static int port;
@@ -20,19 +23,46 @@ public class Client {
 	private static WorkingThread wt;
 	static JButton connect = new JButton("Connect to server");
 	static JButton disconnect = new JButton("Disconnected from server");
+	static JButton sell = new JButton("Sell");
+	static JButton buy = new JButton("Buy");
+	static JButton cancel = new JButton("cancel");
+	static JTextField stockField = new JTextField(20);
 	static JTextArea ta = new JTextArea();
 	static AtomicBoolean kill = new AtomicBoolean(false);
+	static Semaphore mutex = new Semaphore(1);
+	static String action = "";
+	static LocalDateTime lastTransactionTime;
+	static AtomicBoolean activeTransaction = new AtomicBoolean(false);
+	static JLabel msgLabel = new JLabel("no active transaction");
+	static int z = 5000;
 
 //	public static void main(String[] args) {
 //		port = Integer.parseInt(args[0]);
 //		host = args[1];
-//		try (Socket server = new Socket(host, port);) {
+//		try (Socket server = new Socket(host, port);) { 
 //			WorkingThread wt = new WorkingThread(server);
 //			wt.run();
 //		} catch (Exception e) {
 //			e.printStackTrace();
 //		}
 //	}
+	private static void click(String a) {
+		action = a;
+		sell.setEnabled(false);
+		buy.setEnabled(false);
+		stockField.setEnabled(false);
+		cancel.setEnabled(false);
+		lastTransactionTime = LocalDateTime.now();
+		Timer timer = new Timer(z, new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				cancel.setEnabled(true);
+			}
+		});
+		timer.setRepeats(false);
+		timer.start();
+	}
+
 	public static void main(String[] args) {
 		port = Integer.parseInt(args[0]);
 		host = args[1];
@@ -47,15 +77,36 @@ public class Client {
 		JTextField hostField = new JTextField(20);
 		JLabel labelPort = new JLabel("Enter host port");
 		JTextField portField = new JTextField(20);
-		disconnect.setEnabled(false);
+		JLabel labelStock = new JLabel("Enter stock");
+		JPanel p1 = new JPanel();
+		JPanel p2 = new JPanel();
+		JPanel p3 = new JPanel();
+		JPanel p4 = new JPanel();
+		JPanel p5 = new JPanel();
+		p1.add(labelHost);
+		p1.add(hostField);
+		p2.add(labelPort);
+		p2.add(portField);
+		p3.add(connect);
+		p3.add(disconnect);
+		p4.add(labelStock);
+		p4.add(stockField);
+		p5.add(sell);
+		p5.add(buy);
+		p5.add(cancel);
 		panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-		panel.add(labelHost);
-		panel.add(hostField);
-		panel.add(labelPort);
-		panel.add(portField);
-		panel.add(connect);
-		panel.add(disconnect);
+		panel.add(p1);
+		panel.add(p2);
+		panel.add(p3);
+		panel.add(p4);
+		panel.add(p5);
+		panel.add(msgLabel);
 
+		disconnect.setEnabled(false);
+		buy.setEnabled(false);
+		sell.setEnabled(false);
+		cancel.setEnabled(false);
+		stockField.setEnabled(false);
 		// Text Area at the Center
 		ta.setEditable(false);
 
@@ -82,6 +133,10 @@ public class Client {
 				disconnect.setText("disconnect from server");
 				b.setEnabled(false);
 				disconnect.setEnabled(true);
+				buy.setEnabled(true);
+				sell.setEnabled(true);
+				cancel.setEnabled(true);
+				stockField.setEnabled(true);
 				System.out.println(host + " " + port);
 				wt = new WorkingThread(host, port);
 				wt.start();
@@ -106,6 +161,31 @@ public class Client {
 				connect.setEnabled(true);
 				disconnect.setText("disconnected from server");
 				disconnect.setEnabled(false);
+				buy.setEnabled(false);
+				sell.setEnabled(false);
+				cancel.setEnabled(false);
+				stockField.setEnabled(false);
+				activeTransaction.set(false);
+			}
+		});
+
+		buy.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				click(((JButton) e.getSource()).getText().toLowerCase());
+			}
+		});
+		sell.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				click(((JButton) e.getSource()).getText().toLowerCase());
+			}
+		});
+		cancel.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				if (activeTransaction.get())
+					action = "cancel";
 			}
 		});
 
