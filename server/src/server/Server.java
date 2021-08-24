@@ -7,6 +7,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -24,7 +25,7 @@ public class Server {
 	static AtomicInteger lookingFor = new AtomicInteger(0);
 	static ConcurrentHashMap<Integer, Pair<ObjectInputStream, ObjectOutputStream>> workerStreamMap = new ConcurrentHashMap<>();
 	static ConcurrentHashMap<Integer, String> transactionsActive = new ConcurrentHashMap<>();
-
+	static ConcurrentHashMap<Integer, Semaphore> serverStockMutex = new ConcurrentHashMap<>();
 	private static int id = 1;
 
 	public static void main(String[] args) {

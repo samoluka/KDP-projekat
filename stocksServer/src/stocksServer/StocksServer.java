@@ -19,6 +19,8 @@ public class StocksServer {
 	static int port;
 	static String host;
 	static WorkingThread wt;
+	static JTextArea transactionArea = new JTextArea();
+	static JTextArea stockArea = new JTextArea();
 
 	public static void main(String[] args) {
 		port = Integer.parseInt(args[0]);
@@ -46,12 +48,15 @@ public class StocksServer {
 		panel.add(disconnect);
 
 		// Text Area at the Center
-		JTextArea ta = new JTextArea();
-		ta.setEditable(false);
-
+		stockArea.setEditable(false);
+		transactionArea.setEditable(false);
 		// Adding Components to the frame.
 		frame.getContentPane().add(BorderLayout.SOUTH, panel);
-		frame.getContentPane().add(BorderLayout.CENTER, ta);
+		JPanel textAreaPanel = new JPanel();
+		textAreaPanel.setLayout(new BoxLayout(textAreaPanel, BoxLayout.X_AXIS));
+		textAreaPanel.add(stockArea);
+		textAreaPanel.add(transactionArea);
+		frame.getContentPane().add(BorderLayout.CENTER, textAreaPanel);
 		frame.setVisible(true);
 		AtomicBoolean kill = new AtomicBoolean(false);
 		connect.addActionListener(new ActionListener() {
@@ -62,19 +67,19 @@ public class StocksServer {
 				try {
 					port = Integer.parseInt(portField.getText());
 				} catch (Exception ex) {
-					ta.setForeground(Color.RED);
-					ta.setText("Port must be integer");
+					stockArea.setForeground(Color.RED);
+					stockArea.setText("Port must be integer");
 					System.out.println("Greska");
 					return;
 				}
-				ta.setForeground(Color.BLACK);
+				stockArea.setForeground(Color.BLACK);
 				JButton b = (JButton) e.getSource();
 				b.setText("connected to server");
 				disconnect.setText("disconnect from server");
 				b.setEnabled(false);
 				disconnect.setEnabled(true);
 				System.out.println(host + " " + port);
-				wt = new WorkingThread(host, port, ta, connect, disconnect, kill);
+				wt = new WorkingThread(host, port, connect, disconnect, kill);
 				wt.start();
 			}
 		});
@@ -91,8 +96,8 @@ public class StocksServer {
 					e1.printStackTrace();
 				}
 				kill.set(false);
-				ta.setForeground(Color.RED);
-				ta.setText("connection lost");
+				stockArea.setForeground(Color.RED);
+				stockArea.setText("connection lost");
 				connect.setText("connect to server");
 				connect.setEnabled(true);
 				disconnect.setText("disconnected from server");

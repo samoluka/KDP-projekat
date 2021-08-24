@@ -34,7 +34,7 @@ public class WorkingThread extends Thread {
 			Worker w = (Worker) Class.forName(className).getConstructor().newInstance();
 			w.work(client, out, in, id);
 		} catch (Exception e) {
-			// e.printStackTrace();
+			e.printStackTrace();
 		}
 	}
 }

@@ -1,17 +1,13 @@
 package server;
 
-import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import shared.MonitorAtomicBroadcastBuffer;
-import shared.StocksMessage;
-import shared.TextMessage;
 
 public class UpdateStocks extends Thread {
 
@@ -36,40 +32,40 @@ public class UpdateStocks extends Thread {
 		this.buff = buff;
 	}
 
-	private void update() {
-		synchronized (needUpdate) {
-			while (!needUpdate.get()) {
-				try {
-					needUpdate.notifyAll();
-					needUpdate.wait();
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
-			HashMap<String, Integer> hm = new HashMap<>();
-			List<String> myStocks = this.stocksOn.get(id);
-			for (String stock : myStocks) {
-				hm.put(stock, stocks.get(stock) * 2);
-			}
-			StocksMessage stocksMsg = new StocksMessage(hm);
-			try {
-				TextMessage msg = new TextMessage("stocksServer.SetWorker");
-				out.writeObject(msg);
-				out.writeObject(stocksMsg);
-				msg = (TextMessage) in.readObject();
-				if (!"OK DONE".equals(msg.getBody())) {
-					System.err.println("NESTO NIJE OK PREKIDAM PROGRAM");
-					return;
-				}
-			} catch (IOException | ClassNotFoundException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-				return;
-			}
-			needUpdate.set(false);
-		}
-	}
+//	private void update() {
+//		synchronized (needUpdate) {
+//			while (!needUpdate.get()) {
+//				try {
+//					needUpdate.notifyAll();
+//					needUpdate.wait();
+//				} catch (InterruptedException e) {
+//					// TODO Auto-generated catch block
+//					e.printStackTrace();
+//				}
+//			}
+//			HashMap<String, Integer> hm = new HashMap<>();
+//			List<String> myStocks = this.stocksOn.get(id);
+//			for (String stock : myStocks) {
+//				hm.put(stock, stocks.get(stock) * 2);
+//			}
+//			StocksMessage stocksMsg = new StocksMessage(hm);
+//			try {
+//				TextMessage msg = new TextMessage("stocksServer.SetWorker");
+//				out.writeObject(msg);
+//				out.writeObject(stocksMsg);
+//				msg = (TextMessage) in.readObject();
+//				if (!"OK DONE".equals(msg.getBody())) {
+//					System.err.println("NESTO NIJE OK PREKIDAM PROGRAM");
+//					return;
+//				}
+//			} catch (IOException | ClassNotFoundException e) {
+//				// TODO Auto-generated catch block
+//				e.printStackTrace();
+//				return;
+//			}
+//			needUpdate.set(false);
+//		}
+//	}
 
 	@Override
 	public void run() {
