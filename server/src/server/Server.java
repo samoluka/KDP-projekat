@@ -7,6 +7,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -24,8 +25,10 @@ public class Server {
 	static MonitorAtomicBroadcastBuffer<String> buff = new MonitorAtomicBroadcastBuffer<>(1000);
 	static AtomicInteger lookingFor = new AtomicInteger(0);
 	static ConcurrentHashMap<Integer, Pair<ObjectInputStream, ObjectOutputStream>> workerStreamMap = new ConcurrentHashMap<>();
-	static ConcurrentHashMap<Integer, String> transactionsActive = new ConcurrentHashMap<>();
+	static ConcurrentLinkedQueue<String> transactionsActive = new ConcurrentLinkedQueue<>();
+	static ConcurrentHashMap<Integer, List<String>> transactionsOn = new ConcurrentHashMap<>();
 	static ConcurrentHashMap<Integer, Semaphore> serverStockMutex = new ConcurrentHashMap<>();
+
 	private static int id = 1;
 
 	public static void main(String[] args) {
@@ -38,8 +41,8 @@ public class Server {
 
 		try (ServerSocket server = new ServerSocket(port)) {
 			System.out.println("Sever started...");
-			UpdateStocks us = new UpdateStocks(needBalancing, stocksOn, stocks, null, null, 0, buff);
-			us.start();
+//			UpdateStocks us = new UpdateStocks(needBalancing, stocksOn, stocks, null, null, 0, buff);
+//			us.start();
 			while (true) {
 				Socket client = server.accept();
 				new WorkingThread(client, id++).start();

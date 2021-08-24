@@ -5,6 +5,7 @@ import static server.Server.needBalancing;
 import static server.Server.numberOfStocksServers;
 import static server.Server.stocks;
 import static server.Server.stocksOn;
+import static server.Server.transactionsOn;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -49,11 +50,13 @@ public class LoadBalancer extends Thread {
 				hm.put(stock, stocks.get(stock));
 			}
 			StocksMessage stocksMsg = new StocksMessage(hm);
+			String transactions = String.join("\t", transactionsOn.get(id));
 			mutex.acquire();
 			String msg = "set";
 			out.writeObject(msg);
 			out.flush();
 			out.writeObject(stocksMsg);
+			out.writeObject(transactions);
 			out.flush();
 			msg = (String) in.readObject();
 			if (!"OK DONE".equals(msg)) {

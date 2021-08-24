@@ -96,6 +96,8 @@ public class Client implements Worker {
 					}
 					if (stream == null) {
 						System.err.println("GRESKAAAA");
+						out.writeObject("GRESKAAA");
+						out.flush();
 						break;
 					}
 					m = serverStockMutex.get(serverId);
@@ -110,8 +112,8 @@ public class Client implements Worker {
 						out.flush();
 						break;
 					}
-					transactionsActive.put(id,
-							operation + ";" + String.join(";", offer) + ";" + LocalDateTime.now().toString());
+					transactionsActive.put(id, operation + ";" + String.join(";", offer) + ";"
+							+ LocalDateTime.now().toString() + ";" + id);
 					out.writeObject("Ok");
 					out.flush();
 					break;
@@ -128,6 +130,8 @@ public class Client implements Worker {
 					}
 					if (stream == null) {
 						System.err.println("GRESKAAAA");
+						out.writeObject("GRESKAAA");
+						out.flush();
 						break;
 					}
 					m = serverStockMutex.get(serverId);

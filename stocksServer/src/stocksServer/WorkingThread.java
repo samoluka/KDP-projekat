@@ -60,9 +60,12 @@ public class WorkingThread extends Thread {
 				switch (operation) {
 				case "set":
 					stocksMsg = (StocksMessage) in.readObject();
+					String transactionsMsg = (String) in.readObject();
 					out.writeObject("OK DONE");
 					stocks = stocksMsg.getBody();
+					updateTransactions(transactionsMsg);
 					updateTextArea();
+					updateTransactionArea();
 					break;
 				case "get":
 					stocksMsg.setBody(stocks);
@@ -103,6 +106,17 @@ public class WorkingThread extends Thread {
 			d.setText("disconnected from server");
 			d.setEnabled(false);
 			return;
+		}
+	}
+
+	private void updateTransactions(String transactionsMsg) {
+		String[] allTransactions = transactionsMsg.split("\t");
+		transactions.clear();
+		for (String s : allTransactions) {
+			String[] split = s.split(";");
+			if (s.length() < 6)
+				continue;
+			transactions.add(split[1] + ";" + split[2] + ";" + split[3] + ";" + split[5]);
 		}
 	}
 

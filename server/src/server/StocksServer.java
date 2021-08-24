@@ -7,6 +7,8 @@ import static server.Server.numberOfStocksServers;
 import static server.Server.serverStockMutex;
 import static server.Server.stocks;
 import static server.Server.stocksOn;
+import static server.Server.transactionsActive;
+import static server.Server.transactionsOn;
 import static server.Server.workerStreamMap;
 
 import java.io.IOException;
@@ -18,6 +20,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 import shared.Pair;
 import shared.StocksMessage;
@@ -30,8 +33,11 @@ public class StocksServer implements Worker {
 
 	private void rebalance() {
 		HashMap<Integer, List<String>> hs = new HashMap<Integer, List<String>>();
+		HashMap<Integer, List<String>> ts = new HashMap<Integer, List<String>>();
 		List<String> stocksList = new LinkedList<>();
+		List<String> transactionList = new LinkedList<>();
 		stocksList.addAll(stocks.keySet());
+		transactionList.addAll(transactionsActive.values());
 		int ind = 0;
 		int n = numberOfStocksServers.get();
 		int l = stocksList.size() / n;
@@ -43,11 +49,15 @@ public class StocksServer implements Worker {
 				a = 1;
 				ostatak--;
 			}
-			hs.put(key, stocksList.subList(ind, ind + l + a));
+			List<String> subListStocks = stocksList.subList(ind, ind + l + a);
+			hs.put(key, subListStocks);
+			List<String> subListTransaction = transactionList.parallelStream()
+					.filter((s) -> (subListStocks.contains(s.split(";")[1]))).collect(Collectors.toList());
+			ts.put(key, subListTransaction);
 			ind += (l + a);
-
 		}
 		stocksOn.putAll(hs);
+		transactionsOn.putAll(ts);
 		System.out.println("Javljam balanserima");
 		needBalancing.set(true);
 		balanceNumber.set(0);
@@ -63,6 +73,7 @@ public class StocksServer implements Worker {
 			stocksOn.put(id, new LinkedList<String>());
 			serverStockMutex.put(id, mutex);
 			workerStreamMap.put(id, new Pair<>(in, out));
+			transactionsOn.put(id, new LinkedList<>());
 			if (lookingFor.get() == 0)
 				rebalance();
 		}
