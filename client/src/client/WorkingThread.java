@@ -8,9 +8,12 @@ import static client.Client.connect;
 import static client.Client.disconnect;
 import static client.Client.kill;
 import static client.Client.msgLabel;
+import static client.Client.sa;
 import static client.Client.sell;
+import static client.Client.stockCancelField;
 import static client.Client.stockField;
 import static client.Client.ta;
+import static client.Client.usernameField;
 
 import java.awt.Color;
 import java.io.ObjectInputStream;
@@ -21,6 +24,7 @@ import java.util.HashMap;
 import java.util.Map.Entry;
 import java.util.concurrent.Semaphore;
 
+import shared.ChangeMessage;
 import shared.SocketAtomicBroadcastBuffer;
 import shared.StocksMessage;
 import shared.TextMessage;
@@ -31,6 +35,7 @@ public class WorkingThread extends Thread {
 	private String host;
 	private int port;
 	private HashMap<String, Integer> stockPrice = new HashMap<String, Integer>();
+	private HashMap<String, Double> stockChange = new HashMap<>();
 	private Semaphore updateStocks = new Semaphore(1);
 	private Semaphore updateTextArea = new Semaphore(0);
 	private int id;
@@ -44,12 +49,15 @@ public class WorkingThread extends Thread {
 					updateTextArea.acquire();
 					if (kill.get())
 						return;
-					ta.setText("Trenutno vreme: " + LocalDateTime.now().toString() + "\n" + "moj id je: " + id + "\n");
 					sb.setLength(0);
+					sb.append("Trenutno vreme: " + LocalDateTime.now().toString() + "\n");
 					for (Entry<String, Integer> e : stockPrice.entrySet()) {
-						sb.append(e.getKey() + " " + e.getValue() + '\n');
+						Double d = stockChange.get(e.getKey());
+						if (d == null)
+							d = (double) 0;
+						sb.append(e.getKey() + " " + e.getValue() + " " + d + '\n');
 					}
-					ta.setText(ta.getText() + sb.toString());
+					sa.setText(sb.toString());
 					updateStocks.release();
 				} catch (Exception e) {
 					// TODO Auto-generated catch block
@@ -80,6 +88,8 @@ public class WorkingThread extends Thread {
 			TextMessage msg = new TextMessage("server.Client");
 			out.writeObject(msg);
 			id = in.readInt();
+			out.writeObject(usernameField.getText());
+			out.flush();
 			// System.out.println("Moj id je " + id);
 			sharedBuff = new SocketAtomicBroadcastBuffer<>(socket, in, out);
 			while (!kill.get()) {
@@ -96,23 +106,49 @@ public class WorkingThread extends Thread {
 				case "cancel":
 					out.writeObject(action);
 					out.flush();
+					out.writeInt(Integer.parseInt(stockCancelField.getText()));
+					out.flush();
 					action = "";
 					break;
+				case "refreshtransaction":
+					out.writeObject("refresh");
+					out.flush();
+					action = "";
+					break;
+				case "status":
+					out.writeObject(action);
+					out.writeInt(Integer.parseInt(stockCancelField.getText()));
+					out.flush();
+					action = "";
 				}
+
 				String code = (String) in.readObject();
 				switch (code) {
 				case "stocks":
 					StocksMessage sm = (StocksMessage) in.readObject();
+					ChangeMessage cm = (ChangeMessage) in.readObject();
 					updateStocks.acquire();
 					stockPrice = sm.getBody();
+					stockChange = cm.getBody();
 					updateTextArea.release();
 					break;
 				case "Canceled":
 					msgLabel.setText("Transaction canceled");
 					activeTransaction.set(false);
-					buy.setEnabled(true);
-					sell.setEnabled(true);
-					stockField.setEnabled(true);
+					// buy.setEnabled(true);
+					// sell.setEnabled(true);
+					// stockField.setEnabled(true);
+					break;
+				case "transactions":
+					String trA = (String) in.readObject();
+					String trF = (String) in.readObject();
+					out.writeObject("OK DONE");
+					out.flush();
+					updateTransactionArea(trA.split("\t"), trF.split("\t"));
+					break;
+				case "status":
+					Integer status = in.readInt();
+					msgLabel.setText(status.toString());
 					break;
 				default:
 					msgLabel.setText(code);
@@ -122,8 +158,8 @@ public class WorkingThread extends Thread {
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
-			ta.setForeground(Color.RED);
-			ta.setText("no connect to server");
+			sa.setForeground(Color.RED);
+			sa.setText("no connect to server");
 			connect.setText("connect to server");
 			connect.setEnabled(true);
 			disconnect.setText("disconnected from server");
@@ -135,6 +171,20 @@ public class WorkingThread extends Thread {
 			activeTransaction.set(false);
 			return;
 		}
+	}
+
+	private void updateTransactionArea(String[] trA, String[] trF) {
+		StringBuilder sb = new StringBuilder();
+		sb.append("Trenutno vreme: " + LocalDateTime.now().toString() + "\n");
+		sb.append("Aktivne transakcije: \n");
+		for (String s : trA) {
+			sb.append(s + "\n");
+		}
+		sb.append("Zavrsene transakcije: \n");
+		for (String s : trF) {
+			sb.append(s + "\n");
+		}
+		ta.setText(sb.toString());
 	}
 
 }

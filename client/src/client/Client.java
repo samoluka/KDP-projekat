@@ -13,9 +13,9 @@ import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
-import javax.swing.Timer;
 
 public class Client {
 	private static int port;
@@ -26,7 +26,9 @@ public class Client {
 	static JButton sell = new JButton("Sell");
 	static JButton buy = new JButton("Buy");
 	static JButton cancel = new JButton("cancel");
+	static JButton status = new JButton("status");
 	static JTextField stockField = new JTextField(20);
+	static JTextArea sa = new JTextArea();
 	static JTextArea ta = new JTextArea();
 	static AtomicBoolean kill = new AtomicBoolean(false);
 	static Semaphore mutex = new Semaphore(1);
@@ -34,6 +36,9 @@ public class Client {
 	static LocalDateTime lastTransactionTime;
 	static AtomicBoolean activeTransaction = new AtomicBoolean(false);
 	static JLabel msgLabel = new JLabel("no active transaction");
+	static JTextField stockCancelField = new JTextField(20);
+	static JTextField usernameField = new JTextField(20);
+	static JButton refreshTransaction = new JButton("refreshTransaction");
 	static int z = 5000;
 
 //	public static void main(String[] args) {
@@ -48,19 +53,19 @@ public class Client {
 //	}
 	private static void click(String a) {
 		action = a;
-		sell.setEnabled(false);
-		buy.setEnabled(false);
-		stockField.setEnabled(false);
-		cancel.setEnabled(false);
-		lastTransactionTime = LocalDateTime.now();
-		Timer timer = new Timer(z, new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent arg0) {
-				cancel.setEnabled(true);
-			}
-		});
-		timer.setRepeats(false);
-		timer.start();
+		// sell.setEnabled(false);
+		// buy.setEnabled(false);
+		// stockField.setEnabled(false);
+//		cancel.setEnabled(false);
+//		lastTransactionTime = LocalDateTime.now();
+//		Timer timer = new Timer(z, new ActionListener() {
+//			@Override
+//			public void actionPerformed(ActionEvent arg0) {
+//				cancel.setEnabled(true);
+//			}
+//		});
+//		timer.setRepeats(false);
+//		timer.start();
 	}
 
 	public static void main(String[] args) {
@@ -78,28 +83,38 @@ public class Client {
 		JLabel labelPort = new JLabel("Enter host port");
 		JTextField portField = new JTextField(20);
 		JLabel labelStock = new JLabel("Enter stock");
+
 		JPanel p1 = new JPanel();
 		JPanel p2 = new JPanel();
 		JPanel p3 = new JPanel();
 		JPanel p4 = new JPanel();
 		JPanel p5 = new JPanel();
+		JPanel p6 = new JPanel();
+		JPanel p7 = new JPanel();
 		p1.add(labelHost);
 		p1.add(hostField);
 		p2.add(labelPort);
 		p2.add(portField);
+		p7.add(new JLabel("Enter username"));
+		p7.add(usernameField);
 		p3.add(connect);
 		p3.add(disconnect);
 		p4.add(labelStock);
 		p4.add(stockField);
 		p5.add(sell);
 		p5.add(buy);
-		p5.add(cancel);
+		p6.add(stockCancelField);
+		p6.add(cancel);
+		p6.add(status);
 		panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
 		panel.add(p1);
 		panel.add(p2);
+		panel.add(p7);
 		panel.add(p3);
 		panel.add(p4);
 		panel.add(p5);
+		panel.add(p6);
+		panel.add(refreshTransaction);
 		panel.add(msgLabel);
 
 		disconnect.setEnabled(false);
@@ -108,12 +123,23 @@ public class Client {
 		cancel.setEnabled(false);
 		stockField.setEnabled(false);
 		// Text Area at the Center
-		ta.setEditable(false);
-
+		// ta.setEditable(false);
+		sa.setEditable(false);
 		// Adding Components to the frame.
 		frame.getContentPane().add(BorderLayout.SOUTH, panel);
-		frame.getContentPane().add(BorderLayout.CENTER, ta);
+		JPanel textAreaPanel = new JPanel();
+		textAreaPanel.setLayout(new BoxLayout(textAreaPanel, BoxLayout.X_AXIS));
+		textAreaPanel.add(sa);
+		textAreaPanel.add(ta);
+		JScrollPane scrollT = new JScrollPane(ta, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
+				JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+		JScrollPane scrollS = new JScrollPane(sa, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
+				JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+		textAreaPanel.add(scrollT);
+		textAreaPanel.add(scrollS);
+		frame.getContentPane().add(BorderLayout.CENTER, textAreaPanel);
 		frame.setVisible(true);
+		ta.setVisible(true);
 
 		connect.addActionListener(new ActionListener() {
 			@Override
@@ -155,8 +181,8 @@ public class Client {
 					e1.printStackTrace();
 				}
 				kill.set(false);
-				ta.setForeground(Color.RED);
-				ta.setText("connection lost");
+				sa.setForeground(Color.RED);
+				sa.setText("connection lost");
 				connect.setText("connect to server");
 				connect.setEnabled(true);
 				disconnect.setText("disconnected from server");
@@ -181,11 +207,24 @@ public class Client {
 				click(((JButton) e.getSource()).getText().toLowerCase());
 			}
 		});
+		refreshTransaction.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				click(((JButton) e.getSource()).getText().toLowerCase());
+			}
+		});
 		cancel.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				if (activeTransaction.get())
-					action = "cancel";
+//				if (activeTransaction.get())
+				action = "cancel";
+			}
+		});
+		status.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+//				if (activeTransaction.get())
+				action = "status";
 			}
 		});
 

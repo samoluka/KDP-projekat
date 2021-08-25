@@ -17,6 +17,7 @@ import shared.Pair;
 
 public class Server {
 	static ConcurrentHashMap<String, Integer> stocks = new ConcurrentHashMap<>();
+	static ConcurrentHashMap<String, Double> stocksChanges = new ConcurrentHashMap<>();
 	static ConcurrentHashMap<Integer, List<String>> stocksOn = new ConcurrentHashMap<>();
 	static AtomicBoolean needBalancing = new AtomicBoolean(true);
 	static AtomicInteger balanceNumber = new AtomicInteger(0);
@@ -28,6 +29,7 @@ public class Server {
 	static ConcurrentLinkedQueue<String> transactionsActive = new ConcurrentLinkedQueue<>();
 	static ConcurrentHashMap<Integer, List<String>> transactionsOn = new ConcurrentHashMap<>();
 	static ConcurrentHashMap<Integer, Semaphore> serverStockMutex = new ConcurrentHashMap<>();
+	static ConcurrentLinkedQueue<String> transactionsFinished = new ConcurrentLinkedQueue<String>();
 
 	private static int id = 1;
 

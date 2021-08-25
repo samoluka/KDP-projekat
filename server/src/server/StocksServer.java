@@ -6,6 +6,7 @@ import static server.Server.needBalancing;
 import static server.Server.numberOfStocksServers;
 import static server.Server.serverStockMutex;
 import static server.Server.stocks;
+import static server.Server.stocksChanges;
 import static server.Server.stocksOn;
 import static server.Server.transactionsActive;
 import static server.Server.transactionsOn;
@@ -18,12 +19,12 @@ import java.net.Socket;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import shared.Pair;
-import shared.StocksMessage;
 
 public class StocksServer implements Worker {
 
@@ -35,9 +36,9 @@ public class StocksServer implements Worker {
 		HashMap<Integer, List<String>> hs = new HashMap<Integer, List<String>>();
 		HashMap<Integer, List<String>> ts = new HashMap<Integer, List<String>>();
 		List<String> stocksList = new LinkedList<>();
-		List<String> transactionList = new LinkedList<>();
+//		List<String> transactionList = new LinkedList<>();
 		stocksList.addAll(stocks.keySet());
-		transactionList.addAll(transactionsActive.values());
+//		transactionList.addAll(transactionsActive.values());
 		int ind = 0;
 		int n = numberOfStocksServers.get();
 		int l = stocksList.size() / n;
@@ -51,7 +52,7 @@ public class StocksServer implements Worker {
 			}
 			List<String> subListStocks = stocksList.subList(ind, ind + l + a);
 			hs.put(key, subListStocks);
-			List<String> subListTransaction = transactionList.parallelStream()
+			List<String> subListTransaction = transactionsActive.parallelStream()
 					.filter((s) -> (subListStocks.contains(s.split(";")[1]))).collect(Collectors.toList());
 			ts.put(key, subListTransaction);
 			ind += (l + a);
@@ -93,9 +94,14 @@ public class StocksServer implements Worker {
 				String msg = "get";
 				out.writeObject(msg);
 				out.flush();
-				HashMap<String, Integer> hs = ((StocksMessage) in.readObject()).getBody();
+				String[] mess = ((String) in.readObject()).split("\t");
+				HashMap<String, Integer> hs = new HashMap<String, Integer>();
+				for (String str : mess) {
+					hs.put(str.split(";")[0], Integer.parseInt(str.split(";")[1]));
+				}
 				out.writeObject("OK DONE");
 				out.flush();
+				calculateChanges(hs);
 				stocks.putAll(hs);
 				if (!available.get()) {
 					available.set(true);
@@ -116,6 +122,22 @@ public class StocksServer implements Worker {
 				// System.err.println("cekam vreme: " + waitingTime);
 				mutex.release();
 				Thread.sleep(waitingTime);
+			}
+		}
+	}
+
+	private void calculateChanges(HashMap<String, Integer> hs) {
+		for (Entry<String, Integer> e : hs.entrySet()) {
+			int lastPrice = stocks.get(e.getKey()) != null ? stocks.get(e.getKey()) : -1;
+			if (lastPrice != -1) {
+				Double change = e.getValue() * 1.0 / lastPrice;
+				if (change > 1.0) {
+					change = change - 1;
+				} else {
+					change = 1 - change;
+				}
+				if (change != 0.0)
+					stocksChanges.put(e.getKey(), change);
 			}
 		}
 	}
