@@ -130,12 +130,7 @@ public class StocksServer implements Worker {
 		for (Entry<String, Integer> e : hs.entrySet()) {
 			int lastPrice = stocks.get(e.getKey()) != null ? stocks.get(e.getKey()) : -1;
 			if (lastPrice != -1) {
-				Double change = e.getValue() * 1.0 / lastPrice;
-				if (change > 1.0) {
-					change = change - 1;
-				} else {
-					change = 1 - change;
-				}
+				Double change = (e.getValue() * 1.0 / lastPrice) - 1.0;
 				if (change != 0.0)
 					stocksChanges.put(e.getKey(), change);
 			}

@@ -14,6 +14,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
@@ -34,6 +35,7 @@ public class WorkingThread extends Thread {
 	private static String transactionMsg;
 	private HashMap<String, Integer> stocks = new HashMap<>();
 	private List<String> transactions = new LinkedList<>();
+	private List<String> valueUpdate = new LinkedList<>();
 
 	private HashMap<String, List<String>> transactionsBuy = new HashMap<>();
 	private HashMap<String, List<String>> transactionsSell = new HashMap<>();
@@ -72,9 +74,12 @@ public class WorkingThread extends Thread {
 					updateTransactions(transactionsMsg);
 					updateTextArea();
 					updateTransactionArea();
+					valueUpdate.clear();
 					break;
 				case "get":
 					StringBuilder sb = new StringBuilder();
+					updateValuesNoTransaction();
+					valueUpdate.clear();
 					for (Entry<String, Integer> pair : stocks.entrySet()) {
 						String key = pair.getKey();
 						Integer value = pair.getValue();
@@ -87,7 +92,7 @@ public class WorkingThread extends Thread {
 						System.err.println("NESTO NIJE OK PREKIDAM PROGRAM");
 						return;
 					}
-					// updateTextArea();
+					updateTextArea();
 					break;
 				case "buy":
 				case "sell":
@@ -95,7 +100,7 @@ public class WorkingThread extends Thread {
 					// transactions.add(transactionMsg);
 					addTransaction(transactionMsg);
 					String str = findTransactions(transactionMsg);
-					updateValues(transactionMsg);
+					updateValues(transactionMsg, str);
 					remove(transactionMsg, str);
 					out.writeObject(str);
 					out.writeObject("OK DONE");
@@ -125,13 +130,71 @@ public class WorkingThread extends Thread {
 		}
 	}
 
-	private void updateValues(String transactionsMsg2) {
+//	 Ако је у интервалу између два очитавања 
+//	 било трансакција, онда је цена специфицирана последњом обављеном трансакцијом. Ако 
+//	 није било трансакција него је било само понуда за продајом, узима се најнижа активна 
+//	 понуђена цена. Уколико је било само понуда за куповином, узима се највиша активна 
+//	 понуђена цена. Уколико нема активних понуда, онда се узима цена последње обављене 
+//	 трансакције.
+
+	private void updateValuesNoTransaction() {
+		for (String s : stocks.keySet()) {
+			if (!valueUpdate.contains(s)) {
+				List<String> b = transactionsBuy.get(s);
+				if (b != null && !b.isEmpty()) {
+					Optional<String> newPrice = b.stream()
+							.min((String s1, String s2) -> (int) ((Integer.parseInt(s1.split(";")[1]) * 1.0
+									/ Integer.parseInt(s1.split(";")[0]))
+									- (Integer.parseInt(s2.split(";")[1]) * 1.0 / Integer.parseInt(s2.split(";")[0]))));
+					if (newPrice.isPresent()) {
+						stocks.put(s, (int) (Integer.parseInt(newPrice.get().split(";")[1]) * 1.0
+								/ Integer.parseInt(newPrice.get().split(";")[0])));
+						continue;
+					}
+				}
+				b = transactionsSell.get(s);
+				if (b != null && !b.isEmpty()) {
+					Optional<String> newPrice = b.stream()
+							.max((String s1, String s2) -> (int) ((Integer.parseInt(s1.split(";")[1]) * 1.0
+									/ Integer.parseInt(s1.split(";")[0]))
+									- (Integer.parseInt(s2.split(";")[1]) * 1.0 / Integer.parseInt(s2.split(";")[0]))));
+					if (newPrice.isPresent()) {
+						stocks.put(s, (int) (Integer.parseInt(newPrice.get().split(";")[1]) * 1.0
+								/ Integer.parseInt(newPrice.get().split(";")[0])));
+					}
+					continue;
+				}
+			}
+		}
+	}
+
+	private void updateValues(String transactionsMsg2, String str) {
 		if (transactionsMsg2 == null) {
 			return;
 		}
 		String[] trans = transactionsMsg2.split(";");
-		Integer newValue = (int) (stocks.get(trans[1]) * 1.1);
-		stocks.put(trans[1], newValue);
+		if (trans.length < 4)
+			return;
+		if (str != "") {
+			String[] ids = str.split(";");
+			String id = ids[ids.length - 1];
+			Optional<String> t = transactionsBuy.get(trans[1]).parallelStream()
+					.filter((String s) -> s.split(";").length > 2 && s.split(";")[2].equals(id)).findFirst();
+			if (t.isPresent()) {
+				String[] s = t.get().split(";");
+				stocks.put(trans[1], (int) (Integer.parseInt(s[1]) * 1.0 / Integer.parseInt(s[0])));
+				valueUpdate.add(trans[1]);
+				return;
+			}
+			t = transactionsSell.get(trans[1]).parallelStream()
+					.filter((String s) -> s.split(";").length > 2 && s.split(";")[2].equals(id)).findFirst();
+			if (t.isPresent()) {
+				String[] s = t.get().split(";");
+				stocks.put(trans[1], (int) (Integer.parseInt(s[1]) * 1.0 / Integer.parseInt(s[0])));
+				valueUpdate.add(trans[1]);
+				return;
+			}
+		}
 
 	}
 
@@ -191,8 +254,10 @@ public class WorkingThread extends Thread {
 				l = tMap.get(trans[1]);
 				if (l == null)
 					l = new LinkedList<>();
-				l.add(trans[2] + ";" + trans[3] + ";" + trans[4] + ";" + trans[5]);
-				tMap.put(trans[1], l);
+				if (!l.contains(trans[2] + ";" + trans[3] + ";" + trans[4] + ";" + trans[5])) {
+					l.add(trans[2] + ";" + trans[3] + ";" + trans[4] + ";" + trans[5]);
+					tMap.put(trans[1], l);
+				}
 			}
 		}
 	}
@@ -330,6 +395,8 @@ public class WorkingThread extends Thread {
 			return;
 		}
 		String[] allTransactions = t.split("\t");
+		transactionsBuy = new HashMap<>();
+		transactionsSell = new HashMap<>();
 		for (String tr : allTransactions)
 			addTransaction(tr);
 	}

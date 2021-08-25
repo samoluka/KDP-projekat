@@ -150,6 +150,10 @@ public class WorkingThread extends Thread {
 					Integer status = in.readInt();
 					msgLabel.setText(status.toString());
 					break;
+				case "noStocks":
+					msgLabel.setText("Server is currently down");
+					action = "";
+					break;
 				default:
 					msgLabel.setText(code);
 					activeTransaction.set(true);

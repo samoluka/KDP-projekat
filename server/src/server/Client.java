@@ -1,6 +1,7 @@
 package server;
 
 import static server.Server.buff;
+import static server.Server.numberOfStocksServers;
 import static server.Server.serverStockMutex;
 import static server.Server.stocks;
 import static server.Server.stocksChanges;
@@ -44,18 +45,24 @@ public class Client implements Worker {
 			while (true) {
 				try {
 					mutex.acquire();
-					out.writeObject("stocks");
-					out.flush();
-					HashMap<String, Integer> hs = new HashMap<>();
-					hs.putAll(stocks);
-					StocksMessage sm1 = new StocksMessage(hs);
-					HashMap<String, Double> cs = new HashMap<>();
-					cs.putAll(stocksChanges);
-					ChangeMessage sm2 = new ChangeMessage(cs);
-					out.writeObject(sm1);
-					out.writeObject(sm2);
-					out.flush();
-					mutex.release();
+					if (numberOfStocksServers.get() == 0) {
+						out.writeObject("noStocks");
+						out.flush();
+						mutex.release();
+					} else {
+						out.writeObject("stocks");
+						out.flush();
+						HashMap<String, Integer> hs = new HashMap<>();
+						hs.putAll(stocks);
+						StocksMessage sm1 = new StocksMessage(hs);
+						HashMap<String, Double> cs = new HashMap<>();
+						cs.putAll(stocksChanges);
+						ChangeMessage sm2 = new ChangeMessage(cs);
+						out.writeObject(sm1);
+						out.writeObject(sm2);
+						out.flush();
+						mutex.release();
+					}
 					Thread.sleep(x);
 				} catch (InterruptedException | IOException e) {
 					// TODO Auto-generated catch block
@@ -101,6 +108,11 @@ public class Client implements Worker {
 				case "buy":
 				case "sell":
 					String[] offer = ((String) in.readObject()).split(";");
+					if (numberOfStocksServers.get() == 0) {
+						out.writeObject("noStocks");
+						out.flush();
+						break;
+					}
 					String t = operation + ";" + String.join(";", offer) + ";" + idTransaction++ + ";" + username;
 					stream = null;
 					serverId = 0;
@@ -119,11 +131,18 @@ public class Client implements Worker {
 					}
 					m = serverStockMutex.get(serverId);
 					m.acquire();
-					stream.getSecond().writeObject(operation);
-					stream.getSecond().writeObject(t);
-					stream.getSecond().flush();
-					msg = (String) stream.getFirst().readObject();
-					okCode = (String) stream.getFirst().readObject();
+					try {
+						stream.getSecond().writeObject(operation);
+						stream.getSecond().writeObject(t);
+						stream.getSecond().flush();
+						msg = (String) stream.getFirst().readObject();
+						okCode = (String) stream.getFirst().readObject();
+					} catch (Exception e) {
+						m.release();
+						out.writeObject("GRESKA");
+						out.flush();
+						break;
+					}
 					m.release();
 					if (!"OK DONE".equals(okCode)) {
 						out.writeObject("GRESKA");
@@ -142,6 +161,11 @@ public class Client implements Worker {
 					break;
 				case "cancel":
 					idT = in.readInt();
+					if (numberOfStocksServers.get() == 0) {
+						out.writeObject("noStocks");
+						out.flush();
+						break;
+					}
 					Optional<String> stockOpt = transactionsActive.stream().filter(
 							(String s) -> Integer.parseInt(s.split(";")[4]) == idT && s.split(";")[5].equals(username))
 							.findFirst();
@@ -167,11 +191,18 @@ public class Client implements Worker {
 					}
 					m = serverStockMutex.get(serverId);
 					m.acquire();
-					stream.getSecond().writeObject("cancel");
-					stream.getSecond().writeInt(idT);
-					stream.getSecond().flush();
+					try {
+						stream.getSecond().writeObject("cancel");
+						stream.getSecond().writeInt(idT);
+						stream.getSecond().flush();
+						okCode = (String) stream.getFirst().readObject();
+					} catch (Exception e) {
+						m.release();
+						out.writeObject("GRESKA");
+						out.flush();
+						break;
+					}
 					m.release();
-					okCode = (String) stream.getFirst().readObject();
 					if (!"OK DONE".equals(okCode)) {
 						out.writeObject("GRESKA");
 						out.flush();
@@ -182,6 +213,11 @@ public class Client implements Worker {
 					out.flush();
 					break;
 				case "refresh":
+					if (numberOfStocksServers.get() == 0) {
+						out.writeObject("noStocks");
+						out.flush();
+						break;
+					}
 					out.writeObject("transactions");
 					out.writeObject(String.join("\t", transactionsActive));
 					out.writeObject(String.join("\t", transactionsFinished));
@@ -193,6 +229,11 @@ public class Client implements Worker {
 					break;
 				case "status":
 					idT = in.readInt();
+					if (numberOfStocksServers.get() == 0) {
+						out.writeObject("noStocks");
+						out.flush();
+						break;
+					}
 					out.writeObject("status");
 					int status = -1;
 					if (transactionsActive.parallelStream()
