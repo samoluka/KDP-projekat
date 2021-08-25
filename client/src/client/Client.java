@@ -1,7 +1,6 @@
 package client;
 
 import java.awt.BorderLayout;
-import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.time.LocalDateTime;
@@ -13,6 +12,7 @@ import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JPasswordField;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
@@ -28,6 +28,8 @@ public class Client {
 	static JButton cancel = new JButton("cancel");
 	static JButton status = new JButton("status");
 	static JTextField stockField = new JTextField(20);
+	static JTextField qField = new JTextField(20);
+	static JTextField pField = new JTextField(20);
 	static JTextArea sa = new JTextArea();
 	static JTextArea ta = new JTextArea();
 	static AtomicBoolean kill = new AtomicBoolean(false);
@@ -36,7 +38,7 @@ public class Client {
 	static LocalDateTime lastTransactionTime;
 	static AtomicBoolean activeTransaction = new AtomicBoolean(false);
 	static JLabel msgLabel = new JLabel("no active transaction");
-	static JTextField stockCancelField = new JTextField(20);
+	static JTextField stockCancelField = new JTextField(5);
 	static JTextField usernameField = new JTextField(20);
 	static JButton refreshTransaction = new JButton("refreshTransaction");
 	static int z = 5000;
@@ -83,7 +85,9 @@ public class Client {
 		JLabel labelPort = new JLabel("Enter host port");
 		JTextField portField = new JTextField(20);
 		JLabel labelStock = new JLabel("Enter stock");
-
+		JLabel labelQ = new JLabel("Enter quantity");
+		JLabel labelP = new JLabel("Enter price");
+		JLabel labelStatus = new JLabel("Enter transaction Id to get status or cancel the transaction");
 		JPanel p1 = new JPanel();
 		JPanel p2 = new JPanel();
 		JPanel p3 = new JPanel();
@@ -91,37 +95,57 @@ public class Client {
 		JPanel p5 = new JPanel();
 		JPanel p6 = new JPanel();
 		JPanel p7 = new JPanel();
+		JPanel p9 = new JPanel();
+		JPanel p8 = new JPanel();
+		JPanel p10 = new JPanel();
+		JPanel p11 = new JPanel();
 		p1.add(labelHost);
 		p1.add(hostField);
 		p2.add(labelPort);
 		p2.add(portField);
+		p11.add(new JLabel("Enter password"));
 		p7.add(new JLabel("Enter username"));
 		p7.add(usernameField);
+		p11.add(new JPasswordField(20));
 		p3.add(connect);
 		p3.add(disconnect);
 		p4.add(labelStock);
 		p4.add(stockField);
+		p8.add(labelP);
+		p8.add(pField);
+		p9.add(labelQ);
+		p9.add(qField);
 		p5.add(sell);
 		p5.add(buy);
+		p5.add(refreshTransaction);
+		p6.add(labelStatus);
 		p6.add(stockCancelField);
-		p6.add(cancel);
-		p6.add(status);
+		p10.add(cancel);
+		p10.add(status);
 		panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
 		panel.add(p1);
 		panel.add(p2);
 		panel.add(p7);
+		panel.add(p11);
 		panel.add(p3);
 		panel.add(p4);
+		panel.add(p8);
+		panel.add(p9);
 		panel.add(p5);
 		panel.add(p6);
-		panel.add(refreshTransaction);
+		panel.add(p10);
 		panel.add(msgLabel);
 
 		disconnect.setEnabled(false);
 		buy.setEnabled(false);
 		sell.setEnabled(false);
 		cancel.setEnabled(false);
+		refreshTransaction.setEnabled(false);
 		stockField.setEnabled(false);
+		qField.setEnabled(false);
+		pField.setEnabled(false);
+		status.setEnabled(false);
+		stockCancelField.setEditable(false);
 		// Text Area at the Center
 		// ta.setEditable(false);
 		sa.setEditable(false);
@@ -148,12 +172,12 @@ public class Client {
 				try {
 					port = Integer.parseInt(portField.getText());
 				} catch (Exception ex) {
-					ta.setForeground(Color.RED);
-					ta.setText("Port must be integer");
+					// ta.setForeground(Color.RED);
+					sa.setText("Port must be integer");
 					System.out.println("Greska");
 					return;
 				}
-				ta.setForeground(Color.BLACK);
+				// ta.setForeground(Color.BLACK);
 				JButton b = (JButton) e.getSource();
 				b.setText("connected to server");
 				disconnect.setText("disconnect from server");
@@ -162,7 +186,14 @@ public class Client {
 				buy.setEnabled(true);
 				sell.setEnabled(true);
 				cancel.setEnabled(true);
+				refreshTransaction.setEnabled(true);
 				stockField.setEnabled(true);
+				qField.setEnabled(true);
+				pField.setEnabled(true);
+				status.setEnabled(true);
+				stockCancelField.setEditable(true);
+				sa.setText("");
+				ta.setText("");
 				System.out.println(host + " " + port);
 				wt = new WorkingThread(host, port);
 				wt.start();
@@ -181,7 +212,7 @@ public class Client {
 					e1.printStackTrace();
 				}
 				kill.set(false);
-				sa.setForeground(Color.RED);
+				// sa.setForeground(Color.RED);
 				sa.setText("connection lost");
 				connect.setText("connect to server");
 				connect.setEnabled(true);
@@ -190,7 +221,14 @@ public class Client {
 				buy.setEnabled(false);
 				sell.setEnabled(false);
 				cancel.setEnabled(false);
+				refreshTransaction.setEnabled(false);
 				stockField.setEnabled(false);
+				qField.setEnabled(false);
+				pField.setEnabled(false);
+				status.setEnabled(false);
+				// sa.setText("");
+				ta.setText("");
+				stockCancelField.setEditable(false);
 				activeTransaction.set(false);
 			}
 		});

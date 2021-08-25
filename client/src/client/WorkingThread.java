@@ -8,14 +8,17 @@ import static client.Client.connect;
 import static client.Client.disconnect;
 import static client.Client.kill;
 import static client.Client.msgLabel;
+import static client.Client.pField;
+import static client.Client.qField;
+import static client.Client.refreshTransaction;
 import static client.Client.sa;
 import static client.Client.sell;
+import static client.Client.status;
 import static client.Client.stockCancelField;
 import static client.Client.stockField;
 import static client.Client.ta;
 import static client.Client.usernameField;
 
-import java.awt.Color;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
@@ -50,7 +53,7 @@ public class WorkingThread extends Thread {
 					if (kill.get())
 						return;
 					sb.setLength(0);
-					sb.append("Trenutno vreme: " + LocalDateTime.now().toString() + "\n");
+					sb.append("Update time: " + LocalDateTime.now().toString() + "\n");
 					for (Entry<String, Integer> e : stockPrice.entrySet()) {
 						Double d = stockChange.get(e.getKey());
 						if (d == null)
@@ -97,7 +100,7 @@ public class WorkingThread extends Thread {
 				switch (action) {
 				case "sell":
 				case "buy":
-					String stock = stockField.getText();
+					String stock = stockField.getText() + ";" + qField.getText() + ";" + pField.getText();
 					out.writeObject(action);
 					out.writeObject(stock);
 					out.flush();
@@ -131,6 +134,7 @@ public class WorkingThread extends Thread {
 					stockPrice = sm.getBody();
 					stockChange = cm.getBody();
 					updateTextArea.release();
+					msgLabel.setText("");
 					break;
 				case "Canceled":
 					msgLabel.setText("Transaction canceled");
@@ -162,7 +166,7 @@ public class WorkingThread extends Thread {
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
-			sa.setForeground(Color.RED);
+			// Wsa.setForeground(Color.RED);
 			sa.setText("no connect to server");
 			connect.setText("connect to server");
 			connect.setEnabled(true);
@@ -171,7 +175,13 @@ public class WorkingThread extends Thread {
 			buy.setEnabled(false);
 			sell.setEnabled(false);
 			cancel.setEnabled(false);
+			refreshTransaction.setEnabled(false);
 			stockField.setEnabled(false);
+			qField.setEnabled(false);
+			pField.setEnabled(false);
+			status.setEnabled(false);
+			stockCancelField.setEditable(false);
+			ta.setText("");
 			activeTransaction.set(false);
 			return;
 		}
@@ -179,12 +189,13 @@ public class WorkingThread extends Thread {
 
 	private void updateTransactionArea(String[] trA, String[] trF) {
 		StringBuilder sb = new StringBuilder();
-		sb.append("Trenutno vreme: " + LocalDateTime.now().toString() + "\n");
-		sb.append("Aktivne transakcije: \n");
+		sb.append("Update time: " + LocalDateTime.now().toString() + "\n");
+		sb.append("type;stock name;quantity;price;id;user\n");
+		sb.append("Active transactions: \n");
 		for (String s : trA) {
 			sb.append(s + "\n");
 		}
-		sb.append("Zavrsene transakcije: \n");
+		sb.append("Finished transactions: \n");
 		for (String s : trF) {
 			sb.append(s + "\n");
 		}
