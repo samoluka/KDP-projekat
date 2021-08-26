@@ -1,0 +1,4 @@
+Stock A;1000
+Stock B;2000
+Stock C;3000
+Stock D;4000

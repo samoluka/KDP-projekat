@@ -1,6 +1,7 @@
 package server;
 
 import static server.Server.balanceNumber;
+import static server.Server.kill;
 import static server.Server.lookingFor;
 import static server.Server.needBalancing;
 import static server.Server.numberOfStocksServers;
@@ -11,6 +12,7 @@ import static server.Server.stocksOn;
 import static server.Server.transactionsActive;
 import static server.Server.transactionsOn;
 import static server.Server.workerStreamMap;
+import static server.Server.y;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -30,7 +32,7 @@ public class StocksServer implements Worker {
 
 	private Semaphore mutex = new Semaphore(1);
 	private int id;
-	int waitingTime = 500;
+	long waitingTime = 500;
 
 	private void rebalance() {
 		HashMap<Integer, List<String>> hs = new HashMap<Integer, List<String>>();
@@ -83,7 +85,7 @@ public class StocksServer implements Worker {
 		lb.setDaemon(true);
 		lb.start();
 
-		while (true) {
+		while (!kill.get()) {
 			synchronized (needBalancing) {
 				while (needBalancing.get()) {
 					needBalancing.wait();
@@ -97,8 +99,10 @@ public class StocksServer implements Worker {
 				String[] mess = ((String) in.readObject()).split("\t");
 				HashMap<String, Integer> hs = new HashMap<String, Integer>();
 				for (String str : mess) {
-					hs.put(str.split(";")[0], Integer.parseInt(str.split(";")[1]));
+					if (str.split(";").length > 1)
+						hs.put(str.split(";")[0], Integer.parseInt(str.split(";")[1]));
 				}
+
 				out.writeObject("OK DONE");
 				out.flush();
 				calculateChanges(hs);
@@ -106,7 +110,7 @@ public class StocksServer implements Worker {
 				if (!available.get()) {
 					available.set(true);
 				}
-				waitingTime = 500;
+				waitingTime = y.get();
 			} catch (IOException | ClassNotFoundException e) {
 				System.err.println("Server nedostupan " + id);
 				if (available.get()) {

@@ -25,7 +25,6 @@ import shared.StocksMessage;
 import shared.TextMessage;;
 
 public class WorkingThread extends Thread {
-
 	private String host;
 	private int port;
 	private JButton b;
@@ -36,18 +35,20 @@ public class WorkingThread extends Thread {
 	private HashMap<String, Integer> stocks = new HashMap<>();
 	private List<String> transactions = new LinkedList<>();
 	private List<String> valueUpdate = new LinkedList<>();
+	private boolean c;
 
 	private HashMap<String, List<String>> transactionsBuy = new HashMap<>();
 	private HashMap<String, List<String>> transactionsSell = new HashMap<>();
 	private HashMap<String, Integer> minS = new HashMap<>();
 	private HashMap<String, Integer> maxB = new HashMap<>();
 
-	public WorkingThread(String host, int port, JButton b, JButton disconnect, AtomicBoolean kill) {
+	public WorkingThread(String host, int port, JButton b, JButton disconnect, AtomicBoolean kill, boolean c) {
 		this.host = host;
 		this.port = port;
 		this.b = b;
 		this.d = disconnect;
 		this.kill = kill;
+		this.c = c;
 	}
 
 	@Override
@@ -125,12 +126,16 @@ public class WorkingThread extends Thread {
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
-			stockArea.setForeground(Color.RED);
-			stockArea.setText("no connect to server");
-			b.setText("connect to server");
-			b.setEnabled(true);
-			d.setText("disconnected from server");
-			d.setEnabled(false);
+			if (!c) {
+				stockArea.setForeground(Color.RED);
+				stockArea.setText("no connect to server");
+				b.setText("connect to server");
+				b.setEnabled(true);
+				d.setText("disconnected from server");
+				d.setEnabled(false);
+			} else {
+				System.out.println("disconnected from server");
+			}
 			return;
 		}
 	}
@@ -448,7 +453,11 @@ public class WorkingThread extends Thread {
 			sb.append(key + " " + value + "\n");
 			// System.out.println(key + " " + value);
 		}
-		stockArea.setText(sb.toString());
+		if (!c) {
+			stockArea.setText(sb.toString());
+		} else {
+			System.out.println(sb.toString());
+		}
 	}
 
 	private void updateTransactionArea() {
@@ -467,7 +476,11 @@ public class WorkingThread extends Thread {
 				sb.append(e.getKey() + ";" + s + "\n");
 			}
 		}
-		transactionArea.setText(sb.toString());
+		if (!c) {
+			transactionArea.setText(sb.toString());
+		} else {
+			System.out.println(sb.toString());
+		}
 	}
 
 }

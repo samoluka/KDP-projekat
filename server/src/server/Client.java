@@ -1,19 +1,24 @@
 package server;
 
 import static server.Server.buff;
+import static server.Server.kill;
 import static server.Server.numberOfStocksServers;
 import static server.Server.serverStockMutex;
 import static server.Server.stocks;
 import static server.Server.stocksChanges;
 import static server.Server.stocksOn;
+import static server.Server.transactionTime;
 import static server.Server.transactionsActive;
 import static server.Server.transactionsFinished;
 import static server.Server.workerStreamMap;
+import static server.Server.x;
+import static server.Server.z;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -29,20 +34,20 @@ import shared.StocksMessage;
 
 public class Client implements Worker {
 
-	private static int x = 1000;
 	private static int idTransaction = 1;
 	private static int idT = 0;
 
 	private ObjectOutputStream out;
 	private ObjectInputStream in;
 	private int id;
+	private Socket client;
 	private Semaphore mutex = new Semaphore(1);
 
 	private Thread t = new Thread(new Runnable() {
 
 		@Override
 		public void run() {
-			while (true) {
+			while (!kill.get()) {
 				try {
 					mutex.acquire();
 					if (numberOfStocksServers.get() == 0) {
@@ -63,12 +68,18 @@ public class Client implements Worker {
 						out.flush();
 						mutex.release();
 					}
-					Thread.sleep(x);
+					Thread.sleep(x.get());
 				} catch (InterruptedException | IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 					return;
 				}
+			}
+			try {
+				client.close();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
 		}
 	});
@@ -84,6 +95,7 @@ public class Client implements Worker {
 		this.in = in;
 		this.out = out;
 		this.id = id;
+		this.client = client;
 		t.setDaemon(true);
 		t.start();
 //		SocketBufferWorker sbw = new SocketBufferWorker(buff, client, in, out, id);
@@ -95,7 +107,7 @@ public class Client implements Worker {
 		Semaphore m;
 		int serverId = 0;
 
-		while (true) {
+		while (!kill.get()) {
 			try {
 				operation = (String) in.readObject();
 				System.out.println(operation);
@@ -113,7 +125,8 @@ public class Client implements Worker {
 						out.flush();
 						break;
 					}
-					String t = operation + ";" + String.join(";", offer) + ";" + idTransaction++ + ";" + username;
+					int idTrans = idTransaction++;
+					String t = operation + ";" + String.join(";", offer) + ";" + idTrans + ";" + username;
 					stream = null;
 					serverId = 0;
 					for (Entry<Integer, List<String>> pair : stocksOn.entrySet()) {
@@ -124,8 +137,8 @@ public class Client implements Worker {
 						}
 					}
 					if (stream == null) {
-						System.err.println("GRESKAAAA");
-						out.writeObject("GRESKAAA");
+						System.err.println("EROR");
+						out.writeObject("EROR");
 						out.flush();
 						break;
 					}
@@ -139,17 +152,18 @@ public class Client implements Worker {
 						okCode = (String) stream.getFirst().readObject();
 					} catch (Exception e) {
 						m.release();
-						out.writeObject("GRESKA");
+						out.writeObject("EROR");
 						out.flush();
 						break;
 					}
 					m.release();
 					if (!"OK DONE".equals(okCode)) {
-						out.writeObject("GRESKA");
+						out.writeObject("EROR");
 						out.flush();
 						break;
 					}
 					transactionsActive.add(t);
+					transactionTime.put(idTrans, LocalDateTime.now());
 					Set<String> idSet = Arrays.asList(msg.split(";")).stream().collect(Collectors.toSet());
 					List<String> fullList = transactionsActive.parallelStream()
 							.filter(((String s) -> s.split(";").length > 4 && idSet.contains(s.split(";")[4])))
@@ -170,7 +184,15 @@ public class Client implements Worker {
 							(String s) -> Integer.parseInt(s.split(";")[4]) == idT && s.split(";")[5].equals(username))
 							.findFirst();
 					if (stockOpt.isEmpty()) {
-						out.writeObject("GRESKA");
+						out.writeObject("EROR");
+						out.flush();
+						break;
+					}
+//					System.out.println(java.lang.Math
+//							.abs(java.time.Duration.between(transactionTime.get(idT), LocalDateTime.now()).toMillis()));
+					if (java.lang.Math.abs(java.time.Duration.between(transactionTime.get(idT), LocalDateTime.now())
+							.toMillis()) < z.get()) {
+						out.writeObject("EROR");
 						out.flush();
 						break;
 					}
@@ -184,8 +206,8 @@ public class Client implements Worker {
 						}
 					}
 					if (stream == null) {
-						System.err.println("GRESKAAAA");
-						out.writeObject("GRESKAAA");
+						System.err.println("EROR");
+						out.writeObject("EROR");
 						out.flush();
 						break;
 					}
@@ -198,13 +220,13 @@ public class Client implements Worker {
 						okCode = (String) stream.getFirst().readObject();
 					} catch (Exception e) {
 						m.release();
-						out.writeObject("GRESKA");
+						out.writeObject("EROR");
 						out.flush();
 						break;
 					}
 					m.release();
 					if (!"OK DONE".equals(okCode)) {
-						out.writeObject("GRESKA");
+						out.writeObject("EROR");
 						out.flush();
 						break;
 					}

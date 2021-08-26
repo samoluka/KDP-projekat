@@ -46,9 +46,10 @@ public class LoadBalancer extends Thread {
 			System.out.println("krenuo balansiranje " + id);
 			HashMap<String, Integer> hm = new HashMap<>();
 			List<String> myStocks = stocksOn.get(id);
-			for (String stock : myStocks) {
-				hm.put(stock, stocks.get(stock));
-			}
+			if (myStocks != null)
+				for (String stock : myStocks) {
+					hm.put(stock, stocks.get(stock));
+				}
 			StocksMessage stocksMsg = new StocksMessage(hm);
 			String transactions = String.join("\t", transactionsOn.get(id));
 			mutex.acquire();
