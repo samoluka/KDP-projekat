@@ -28,20 +28,18 @@ import java.util.Map.Entry;
 import java.util.concurrent.Semaphore;
 
 import shared.ChangeMessage;
-import shared.SocketAtomicBroadcastBuffer;
 import shared.StocksMessage;
 import shared.TextMessage;
 
 public class WorkingThread extends Thread {
 
-	private SocketAtomicBroadcastBuffer<String> sharedBuff;
 	private String host;
 	private int port;
 	private HashMap<String, Integer> stockPrice = new HashMap<String, Integer>();
 	private HashMap<String, Double> stockChange = new HashMap<>();
 	private Semaphore updateStocks = new Semaphore(1);
 	private Semaphore updateTextArea = new Semaphore(0);
-	private int id;
+	private int id = 0;
 
 	private Thread t = new Thread(new Runnable() {
 		@Override
@@ -72,10 +70,6 @@ public class WorkingThread extends Thread {
 		}
 	});
 
-//	public WorkingThread(Socket server) {
-//		this.server = server;
-//	}
-
 	public WorkingThread(String host, int port) {
 		this.host = host;
 		this.port = port;
@@ -90,11 +84,9 @@ public class WorkingThread extends Thread {
 				ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());) {
 			TextMessage msg = new TextMessage("server.Client");
 			out.writeObject(msg);
-			id = in.readInt();
+			this.id = in.readInt();
 			out.writeObject(usernameField.getText());
 			out.flush();
-			// System.out.println("Moj id je " + id);
-			sharedBuff = new SocketAtomicBroadcastBuffer<>(socket, in, out);
 			while (!kill.get()) {
 				// System.out.println("CEKAM PORUKU");
 				switch (action) {
@@ -140,9 +132,6 @@ public class WorkingThread extends Thread {
 					msgLabel.setText("Transaction canceled");
 					System.out.println("Transaction canceled");
 					activeTransaction.set(false);
-					// buy.setEnabled(true);
-					// sell.setEnabled(true);
-					// stockField.setEnabled(true);
 					break;
 				case "transactions":
 					String trA = (String) in.readObject();

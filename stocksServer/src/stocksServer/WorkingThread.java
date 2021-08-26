@@ -176,30 +176,6 @@ public class WorkingThread extends Thread {
 	private void updateValuesNoTransaction() {
 		for (String s : stocks.keySet()) {
 			if (!valueUpdate.contains(s)) {
-//				List<String> b = transactionsBuy.get(s);
-//				if (b != null && !b.isEmpty()) {
-//					Optional<String> newPrice = b.stream()
-//							.min((String s1, String s2) -> (int) ((Integer.parseInt(s1.split(";")[1]) * 1.0
-//									/ Integer.parseInt(s1.split(";")[0]))
-//									- (Integer.parseInt(s2.split(";")[1]) * 1.0 / Integer.parseInt(s2.split(";")[0]))));
-//					if (newPrice.isPresent()) {
-//						stocks.put(s, (int) (Integer.parseInt(newPrice.get().split(";")[1]) * 1.0
-//								/ Integer.parseInt(newPrice.get().split(";")[0])));
-//						continue;
-//					}
-//				}
-//				b = transactionsSell.get(s);
-//				if (b != null && !b.isEmpty()) {
-//					Optional<String> newPrice = b.stream()
-//							.max((String s1, String s2) -> (int) ((Integer.parseInt(s1.split(";")[1]) * 1.0
-//									/ Integer.parseInt(s1.split(";")[0]))
-//									- (Integer.parseInt(s2.split(";")[1]) * 1.0 / Integer.parseInt(s2.split(";")[0]))));
-//					if (newPrice.isPresent()) {
-//						stocks.put(s, (int) (Integer.parseInt(newPrice.get().split(";")[1]) * 1.0
-//								/ Integer.parseInt(newPrice.get().split(";")[0])));
-//					}
-//					continue;
-//				}
 				if (minS.get(s) != null) {
 					stocks.put(s, minS.get(s));
 				} else if (maxB.get(s) != null) {
@@ -304,15 +280,6 @@ public class WorkingThread extends Thread {
 	}
 
 	private String findTransactions(String transaction) {
-//		while (!transactions.isEmpty() && transactions.get(0).split(";").length < 4) {
-//			transactions.remove(0);
-//		}
-//		if (!transactions.isEmpty() && transactions.get(0).split(";").length > 4) {
-//			String str = transactions.get(0).split(";")[4];
-//			transactions.remove(0);
-//			System.out.println("ukranjam " + str);
-//			return str;
-//		}
 		if (transaction == null) {
 			return "";
 		}

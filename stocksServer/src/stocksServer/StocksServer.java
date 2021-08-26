@@ -25,10 +25,10 @@ public class StocksServer {
 	static JTextArea stockArea = new JTextArea();
 
 	public static void main(String[] args) {
-		port = Integer.parseInt(args[0]);
-		host = args[1];
 		AtomicBoolean kill = new AtomicBoolean(false);
 		if (args.length > 2 && args[2].equals("c")) {
+			port = Integer.parseInt(args[0]);
+			host = args[1];
 			wt = new WorkingThread(host, port, null, null, kill, true);
 			wt.start();
 			try {

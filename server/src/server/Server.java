@@ -27,7 +27,6 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
-import shared.MonitorAtomicBroadcastBuffer;
 import shared.Pair;
 
 public class Server {
@@ -37,8 +36,6 @@ public class Server {
 	static AtomicBoolean needBalancing = new AtomicBoolean(true);
 	static AtomicInteger balanceNumber = new AtomicInteger(0);
 	static AtomicInteger numberOfStocksServers = new AtomicInteger(0);
-	static ConcurrentHashMap<Integer, AtomicBoolean> needUpdate = new ConcurrentHashMap<>();
-	static MonitorAtomicBroadcastBuffer<String> buff = new MonitorAtomicBroadcastBuffer<>(1000);
 	static AtomicInteger lookingFor = new AtomicInteger(0);
 	static ConcurrentHashMap<Integer, Pair<ObjectInputStream, ObjectOutputStream>> workerStreamMap = new ConcurrentHashMap<>();
 	static ConcurrentLinkedQueue<String> transactionsActive = new ConcurrentLinkedQueue<>();
@@ -69,8 +66,6 @@ public class Server {
 
 			try (ServerSocket server = new ServerSocket(port)) {
 				System.out.println("Sever started...");
-//			UpdateStocks us = new UpdateStocks(needBalancing, stocksOn, stocks, null, null, 0, buff);
-//			us.start();
 				while (true) {
 					Socket client = server.accept();
 					new WorkingThread(client, id++).start();
@@ -148,8 +143,6 @@ public class Server {
 								System.out.println("Sever started...");
 								msg.setText("Sever started...");
 								srv = server;
-//							UpdateStocks us = new UpdateStocks(needBalancing, stocksOn, stocks, null, null, 0, buff);
-//							us.start();
 								while (true) {
 									Socket client = server.accept();
 									WorkingThread w = new WorkingThread(client, id++);
@@ -175,8 +168,6 @@ public class Server {
 							needBalancing.set(true);
 							balanceNumber.set(0);
 							numberOfStocksServers.set(0);
-							needUpdate.clear();
-//							buff = new MonitorAtomicBroadcastBuffer<>(1000);
 							lookingFor.set(0);
 							workerStreamMap.clear();
 							// transactionsActive.clear();

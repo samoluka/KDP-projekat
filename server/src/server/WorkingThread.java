@@ -9,7 +9,6 @@ import shared.TextMessage;
 public class WorkingThread extends Thread {
 
 	private Socket client;
-	private int interval;
 	private int id;
 
 	public WorkingThread(Socket client, int id) {
@@ -18,7 +17,6 @@ public class WorkingThread extends Thread {
 		this.id = id;
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public void run() {
 		try (Socket socket = this.client;

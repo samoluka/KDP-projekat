@@ -1,6 +1,5 @@
 package server;
 
-import static server.Server.buff;
 import static server.Server.kill;
 import static server.Server.numberOfStocksServers;
 import static server.Server.serverStockMutex;
@@ -88,7 +87,6 @@ public class Client implements Worker {
 	public void work(Socket client, ObjectOutputStream out, ObjectInputStream in, int id)
 			throws IOException, Exception {
 
-		buff.addListener(id);
 		out.writeInt(id);
 		out.flush();
 		String username = (String) in.readObject();
@@ -98,8 +96,6 @@ public class Client implements Worker {
 		this.client = client;
 		t.setDaemon(true);
 		t.start();
-//		SocketBufferWorker sbw = new SocketBufferWorker(buff, client, in, out, id);
-//		sbw.run();
 		Pair<ObjectInputStream, ObjectOutputStream> stream = null;
 		String okCode;
 		String operation;
@@ -113,10 +109,6 @@ public class Client implements Worker {
 				System.out.println(operation);
 				mutex.acquire();
 				switch (operation) {
-//				case "get":
-//					String item = buff.get(id);
-//					out.writeObject(item);
-//					break;
 				case "buy":
 				case "sell":
 					String[] offer = ((String) in.readObject()).split(";");
@@ -188,8 +180,6 @@ public class Client implements Worker {
 						out.flush();
 						break;
 					}
-//					System.out.println(java.lang.Math
-//							.abs(java.time.Duration.between(transactionTime.get(idT), LocalDateTime.now()).toMillis()));
 					if (java.lang.Math.abs(java.time.Duration.between(transactionTime.get(idT), LocalDateTime.now())
 							.toMillis()) < z.get()) {
 						out.writeObject("EROR");
@@ -268,16 +258,12 @@ public class Client implements Worker {
 					out.flush();
 					break;
 				default:
-//					String ret = String.format("*** Operation %s not supported.", operation);
-//					System.out.println(ret);
-//					out.writeObject(ret);
 					break;
 				}
 				mutex.release();
 			} catch (ClassNotFoundException | IOException e) {
 				// System.err.println("OVDE PUCA");
 				e.printStackTrace();
-				buff.removeListener(id);
 				System.out.println("DISKONEKTOVAN KLIJENT " + id);
 				return;
 			}

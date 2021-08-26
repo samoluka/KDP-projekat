@@ -42,33 +42,9 @@ public class Client {
 	static JTextField stockCancelField = new JTextField(5);
 	static JTextField usernameField = new JTextField(20);
 	static JButton refreshTransaction = new JButton("refreshTransaction");
-	static int z = 5000;
 
-//	public static void main(String[] args) {
-//		port = Integer.parseInt(args[0]);
-//		host = args[1];
-//		try (Socket server = new Socket(host, port);) { 
-//			WorkingThread wt = new WorkingThread(server);
-//			wt.run();
-//		} catch (Exception e) {
-//			e.printStackTrace();
-//		}
-//	}
 	private static void click(String a) {
 		action = a;
-		// sell.setEnabled(false);
-		// buy.setEnabled(false);
-		// stockField.setEnabled(false);
-//		cancel.setEnabled(false);
-//		lastTransactionTime = LocalDateTime.now();
-//		Timer timer = new Timer(z, new ActionListener() {
-//			@Override
-//			public void actionPerformed(ActionEvent arg0) {
-//				cancel.setEnabled(true);
-//			}
-//		});
-//		timer.setRepeats(false);
-//		timer.start();
 	}
 
 	public static void main(String[] args) {

@@ -38,9 +38,7 @@ public class StocksServer implements Worker {
 		HashMap<Integer, List<String>> hs = new HashMap<Integer, List<String>>();
 		HashMap<Integer, List<String>> ts = new HashMap<Integer, List<String>>();
 		List<String> stocksList = new LinkedList<>();
-//		List<String> transactionList = new LinkedList<>();
 		stocksList.addAll(stocks.keySet());
-//		transactionList.addAll(transactionsActive.values());
 		int ind = 0;
 		int n = numberOfStocksServers.get();
 		int l = stocksList.size() / n;
