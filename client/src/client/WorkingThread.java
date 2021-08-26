@@ -138,6 +138,7 @@ public class WorkingThread extends Thread {
 					break;
 				case "Canceled":
 					msgLabel.setText("Transaction canceled");
+					System.out.println("Transaction canceled");
 					activeTransaction.set(false);
 					// buy.setEnabled(true);
 					// sell.setEnabled(true);
@@ -153,13 +154,16 @@ public class WorkingThread extends Thread {
 				case "status":
 					Integer status = in.readInt();
 					msgLabel.setText(status.toString());
+					System.out.println(status.toString());
 					break;
 				case "noStocks":
 					msgLabel.setText("Server is currently down");
+					System.out.println("Server is currently down");
 					action = "";
 					break;
 				default:
 					msgLabel.setText(code);
+					System.out.println(code);
 					activeTransaction.set(true);
 					break;
 				}
@@ -200,6 +204,7 @@ public class WorkingThread extends Thread {
 			sb.append(s + "\n");
 		}
 		ta.setText(sb.toString());
+		System.out.println(sb.toString());
 	}
 
 }
