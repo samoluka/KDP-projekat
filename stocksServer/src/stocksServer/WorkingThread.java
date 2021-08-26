@@ -39,6 +39,8 @@ public class WorkingThread extends Thread {
 
 	private HashMap<String, List<String>> transactionsBuy = new HashMap<>();
 	private HashMap<String, List<String>> transactionsSell = new HashMap<>();
+	private HashMap<String, Integer> minS = new HashMap<>();
+	private HashMap<String, Integer> maxB = new HashMap<>();
 
 	public WorkingThread(String host, int port, JButton b, JButton disconnect, AtomicBoolean kill) {
 		this.host = host;
@@ -93,12 +95,15 @@ public class WorkingThread extends Thread {
 						return;
 					}
 					updateTextArea();
+					maxB.clear();
+					minS.clear();
 					break;
 				case "buy":
 				case "sell":
 					transactionMsg = (String) in.readObject();
 					// transactions.add(transactionMsg);
 					addTransaction(transactionMsg);
+					updateValueMinMax(transactionMsg);
 					String str = findTransactions(transactionMsg);
 					updateValues(transactionMsg, str);
 					remove(transactionMsg, str);
@@ -137,32 +142,63 @@ public class WorkingThread extends Thread {
 //	 понуђена цена. Уколико нема активних понуда, онда се узима цена последње обављене 
 //	 трансакције.
 
+	private void updateValueMinMax(String transactionMsg2) {
+		if (transactionMsg2 == null) {
+			return;
+		}
+		String[] trans = transactionMsg2.split(";");
+		if (trans.length < 4)
+			return;
+		if (trans[0].equals("buy")) {
+			Integer currMax = maxB.get(trans[1]);
+			Integer newVal = (int) (Integer.parseInt(trans[3]) * 1.0 / Integer.parseInt(trans[2]));
+			if (currMax == null) {
+				maxB.put(trans[1], newVal);
+			} else {
+				maxB.put(trans[1], java.lang.Math.max(currMax, newVal));
+			}
+		} else if (trans[0].equals("sell")) {
+			Integer currMax = minS.get(trans[1]);
+			Integer newVal = (int) (Integer.parseInt(trans[3]) * 1.0 / Integer.parseInt(trans[2]));
+			if (currMax == null) {
+				minS.put(trans[1], newVal);
+			} else {
+				minS.put(trans[1], java.lang.Math.min(currMax, newVal));
+			}
+		}
+	}
+
 	private void updateValuesNoTransaction() {
 		for (String s : stocks.keySet()) {
 			if (!valueUpdate.contains(s)) {
-				List<String> b = transactionsBuy.get(s);
-				if (b != null && !b.isEmpty()) {
-					Optional<String> newPrice = b.stream()
-							.min((String s1, String s2) -> (int) ((Integer.parseInt(s1.split(";")[1]) * 1.0
-									/ Integer.parseInt(s1.split(";")[0]))
-									- (Integer.parseInt(s2.split(";")[1]) * 1.0 / Integer.parseInt(s2.split(";")[0]))));
-					if (newPrice.isPresent()) {
-						stocks.put(s, (int) (Integer.parseInt(newPrice.get().split(";")[1]) * 1.0
-								/ Integer.parseInt(newPrice.get().split(";")[0])));
-						continue;
-					}
-				}
-				b = transactionsSell.get(s);
-				if (b != null && !b.isEmpty()) {
-					Optional<String> newPrice = b.stream()
-							.max((String s1, String s2) -> (int) ((Integer.parseInt(s1.split(";")[1]) * 1.0
-									/ Integer.parseInt(s1.split(";")[0]))
-									- (Integer.parseInt(s2.split(";")[1]) * 1.0 / Integer.parseInt(s2.split(";")[0]))));
-					if (newPrice.isPresent()) {
-						stocks.put(s, (int) (Integer.parseInt(newPrice.get().split(";")[1]) * 1.0
-								/ Integer.parseInt(newPrice.get().split(";")[0])));
-					}
-					continue;
+//				List<String> b = transactionsBuy.get(s);
+//				if (b != null && !b.isEmpty()) {
+//					Optional<String> newPrice = b.stream()
+//							.min((String s1, String s2) -> (int) ((Integer.parseInt(s1.split(";")[1]) * 1.0
+//									/ Integer.parseInt(s1.split(";")[0]))
+//									- (Integer.parseInt(s2.split(";")[1]) * 1.0 / Integer.parseInt(s2.split(";")[0]))));
+//					if (newPrice.isPresent()) {
+//						stocks.put(s, (int) (Integer.parseInt(newPrice.get().split(";")[1]) * 1.0
+//								/ Integer.parseInt(newPrice.get().split(";")[0])));
+//						continue;
+//					}
+//				}
+//				b = transactionsSell.get(s);
+//				if (b != null && !b.isEmpty()) {
+//					Optional<String> newPrice = b.stream()
+//							.max((String s1, String s2) -> (int) ((Integer.parseInt(s1.split(";")[1]) * 1.0
+//									/ Integer.parseInt(s1.split(";")[0]))
+//									- (Integer.parseInt(s2.split(";")[1]) * 1.0 / Integer.parseInt(s2.split(";")[0]))));
+//					if (newPrice.isPresent()) {
+//						stocks.put(s, (int) (Integer.parseInt(newPrice.get().split(";")[1]) * 1.0
+//								/ Integer.parseInt(newPrice.get().split(";")[0])));
+//					}
+//					continue;
+//				}
+				if (minS.get(s) != null) {
+					stocks.put(s, minS.get(s));
+				} else if (maxB.get(s) != null) {
+					stocks.put(s, maxB.get(s));
 				}
 			}
 		}

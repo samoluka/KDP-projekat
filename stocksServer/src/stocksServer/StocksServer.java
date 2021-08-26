@@ -11,6 +11,8 @@ import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JPasswordField;
+import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 
@@ -36,16 +38,35 @@ public class StocksServer {
 		JTextField hostField = new JTextField(20);
 		JLabel labelPort = new JLabel("Enter host port");
 		JTextField portField = new JTextField(20);
+		JLabel usernameLabel = new JLabel("Enter username");
+		JLabel passwordLabel = new JLabel("Enter password");
+		JTextField uField = new JTextField(20);
+		JPasswordField pField = new JPasswordField(20);
 		JButton connect = new JButton("Connect to server");
 		JButton disconnect = new JButton("Disconnected from server");
 		disconnect.setEnabled(false);
 		panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-		panel.add(labelHost); // Components Added using Flow Layout
-		panel.add(hostField);
-		panel.add(labelPort);
-		panel.add(portField);
-		panel.add(connect);
-		panel.add(disconnect);
+		JPanel p1 = new JPanel();
+		p1.add(labelHost);
+		p1.add(hostField);
+		JPanel p2 = new JPanel();
+		p2.add(labelPort);
+		p2.add(portField);
+		JPanel p3 = new JPanel();
+		p3.add(usernameLabel);
+		p3.add(uField);
+		JPanel p4 = new JPanel();
+		p4.add(passwordLabel);
+		p4.add(pField);
+		JPanel p5 = new JPanel();
+		p5.add(connect);
+		p5.add(disconnect);
+		panel.add(p1); // Components Added using Flow Layout
+		panel.add(p2);
+		panel.add(p3);
+		panel.add(p4);
+		panel.add(p5);
+//		panel.add(disconnect);
 
 		// Text Area at the Center
 		stockArea.setEditable(false);
@@ -56,6 +77,12 @@ public class StocksServer {
 		textAreaPanel.setLayout(new BoxLayout(textAreaPanel, BoxLayout.X_AXIS));
 		textAreaPanel.add(stockArea);
 		textAreaPanel.add(transactionArea);
+		JScrollPane scrollT = new JScrollPane(transactionArea, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
+				JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+		JScrollPane scrollS = new JScrollPane(stockArea, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
+				JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+		textAreaPanel.add(scrollT);
+		textAreaPanel.add(scrollS);
 		frame.getContentPane().add(BorderLayout.CENTER, textAreaPanel);
 		frame.setVisible(true);
 		AtomicBoolean kill = new AtomicBoolean(false);
