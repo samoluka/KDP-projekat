@@ -1,6 +1,7 @@
 package client;
 
 import static client.Client.action;
+import static client.Client.actionSemaphore;
 import static client.Client.activeTransaction;
 import static client.Client.buy;
 import static client.Client.cancel;
@@ -19,9 +20,11 @@ import static client.Client.stockField;
 import static client.Client.ta;
 import static client.Client.usernameField;
 
+import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.net.UnknownHostException;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map.Entry;
@@ -38,34 +41,56 @@ public class WorkingThread extends Thread {
 	private HashMap<String, Integer> stockPrice = new HashMap<String, Integer>();
 	private HashMap<String, Double> stockChange = new HashMap<>();
 	private Semaphore updateStocks = new Semaphore(1);
-	private Semaphore updateTextArea = new Semaphore(0);
+	private Semaphore updateTextArea = new Semaphore(1);
+
 	private int id = 0;
 
 	private Thread t = new Thread(new Runnable() {
 		@Override
 		public void run() {
 			StringBuilder sb = new StringBuilder();
-			while (true) {
-				try {
-					updateTextArea.acquire();
-					if (kill.get())
+			try (Socket socket = new Socket(host, port);
+					ObjectInputStream in = new ObjectInputStream(socket.getInputStream());
+					ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());) {
+				TextMessage msg = new TextMessage("server.StocksGetWorker");
+				out.writeObject(msg);
+				while (!kill.get()) {
+					try {
+						String code = (String) in.readObject();
+						if (code.equals("stocks")) {
+							StocksMessage sm = (StocksMessage) in.readObject();
+							ChangeMessage cm = (ChangeMessage) in.readObject();
+							updateStocks.acquire();
+							stockPrice = sm.getBody();
+							stockChange = cm.getBody();
+							msgLabel.setText("");
+							sb.setLength(0);
+							sb.append("Update time: " + LocalDateTime.now().toString() + "\n");
+							for (Entry<String, Integer> e : stockPrice.entrySet()) {
+								Double d = stockChange.get(e.getKey());
+								if (d == null)
+									d = (double) 0;
+								sb.append(e.getKey() + " " + e.getValue() + " " + d + '\n');
+							}
+							sa.setText(sb.toString());
+							updateStocks.release();
+						} else if (code.equals("noStocks")) {
+							msgLabel.setText("Server is currently down");
+							System.out.println("Server is currently down");
+						}
+					} catch (Exception e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+						System.out.println("GASIM");
 						return;
-					sb.setLength(0);
-					sb.append("Update time: " + LocalDateTime.now().toString() + "\n");
-					for (Entry<String, Integer> e : stockPrice.entrySet()) {
-						Double d = stockChange.get(e.getKey());
-						if (d == null)
-							d = (double) 0;
-						sb.append(e.getKey() + " " + e.getValue() + " " + d + '\n');
 					}
-					sa.setText(sb.toString());
-					updateStocks.release();
-				} catch (Exception e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-					System.out.println("GASIM");
-					return;
 				}
+			} catch (UnknownHostException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			} catch (IOException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
 			}
 		}
 	});
@@ -77,19 +102,26 @@ public class WorkingThread extends Thread {
 
 	@Override
 	public void run() {
-		t.start();
+
 		System.out.println("KILL " + kill.get());
 		try (Socket socket = new Socket(host, port);
 				ObjectInputStream in = new ObjectInputStream(socket.getInputStream());
 				ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());) {
 			TextMessage msg = new TextMessage("server.Client");
 			out.writeObject(msg);
+			t.start();
 			this.id = in.readInt();
 			out.writeObject(usernameField.getText());
 			out.flush();
 			while (!kill.get()) {
 				// System.out.println("CEKAM PORUKU");
+				actionSemaphore.acquire();
 				switch (action) {
+				case "kill":
+					t.join();
+					System.out.println("Cekam drugu nit");
+					System.out.println("GASIM SE");
+					return;
 				case "sell":
 				case "buy":
 					String stock = stockField.getText() + ";" + qField.getText() + ";" + pField.getText();
@@ -119,15 +151,6 @@ public class WorkingThread extends Thread {
 
 				String code = (String) in.readObject();
 				switch (code) {
-				case "stocks":
-					StocksMessage sm = (StocksMessage) in.readObject();
-					ChangeMessage cm = (ChangeMessage) in.readObject();
-					updateStocks.acquire();
-					stockPrice = sm.getBody();
-					stockChange = cm.getBody();
-					updateTextArea.release();
-					msgLabel.setText("");
-					break;
 				case "Canceled":
 					msgLabel.setText("Transaction canceled");
 					System.out.println("Transaction canceled");
@@ -144,11 +167,6 @@ public class WorkingThread extends Thread {
 					Integer status = in.readInt();
 					msgLabel.setText(status.toString());
 					System.out.println(status.toString());
-					break;
-				case "noStocks":
-					msgLabel.setText("Server is currently down");
-					System.out.println("Server is currently down");
-					action = "";
 					break;
 				default:
 					msgLabel.setText(code);

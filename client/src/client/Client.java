@@ -3,6 +3,8 @@ package client;
 import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.time.LocalDateTime;
 import java.util.Scanner;
 import java.util.concurrent.Semaphore;
@@ -42,26 +44,42 @@ public class Client {
 	static JTextField stockCancelField = new JTextField(5);
 	static JTextField usernameField = new JTextField(20);
 	static JButton refreshTransaction = new JButton("refreshTransaction");
+	static Semaphore actionSemaphore = new Semaphore(0);
 
-	private static void click(String a) {
+	private static void setAction(String a) {
 		action = a;
+		actionSemaphore.release();
 	}
 
-	public static void main(String[] args) {
+	@SuppressWarnings("resource")
+	public static void main(String[] args) throws FileNotFoundException {
 		if (args.length > 3 && args[3].equals("c")) {
+			String filename = "";
+			if (args.length == 5) {
+				filename = args[4];
+			}
 			port = Integer.parseInt(args[0]);
 			host = args[1];
 			usernameField.setText(args[2]);
 			System.out.println(host + " " + port);
 			wt = new WorkingThread(host, port);
 			wt.start();
-			Scanner myObj = new Scanner(System.in); // Create a Scanner object
+			Scanner myObj;
+			if (filename.equals("")) {
+				myObj = new Scanner(System.in);// Create a Scanner object
+			} else {
+				File myFile = new File(filename);
+				myObj = new Scanner(myFile);
+			}
 			String command = myObj.nextLine();
+			if (!filename.equals("")) {
+				System.out.println(command);
+			}
 			while (!command.equals("stop")) {
 				String[] a = command.split(";");
 				switch (a[0]) {
 				case "refresh":
-					action = "refreshtransaction";
+					setAction("refreshtransaction");
 					break;
 				case "cancel":
 				case "status":
@@ -70,7 +88,7 @@ public class Client {
 						break;
 					}
 					stockCancelField.setText(a[1]);
-					action = a[0];
+					setAction(a[0]);
 					break;
 				case "buy":
 				case "sell":
@@ -81,7 +99,7 @@ public class Client {
 					stockField.setText(a[1]);
 					qField.setText(a[2]);
 					pField.setText(a[3]);
-					action = a[0];
+					setAction(a[0]);
 					break;
 				case "stocks":
 					System.out.println(sa.getText());
@@ -91,9 +109,18 @@ public class Client {
 					break;
 				}
 				command = myObj.nextLine();
+				if (!filename.equals("")) {
+					try {
+						Thread.sleep(10);
+					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}
 			}
 			kill.set(true);
 			System.out.println("SETOVAO KILL");
+			setAction("kill");
 			try {
 				wt.join();
 			} catch (InterruptedException e1) {
@@ -101,6 +128,9 @@ public class Client {
 				e1.printStackTrace();
 			}
 			kill.set(false);
+			if (!filename.equals("")) {
+				myObj.close();
+			}
 		} else {
 			// Creating the Frame
 			JFrame frame = new JFrame("Stocks client");
@@ -233,6 +263,7 @@ public class Client {
 				public void actionPerformed(ActionEvent e) {
 					// TODO Auto-generated method stub
 					kill.set(true);
+					setAction("kill");
 					System.out.println("SETOVAO KILL");
 					try {
 						wt.join();
@@ -265,33 +296,33 @@ public class Client {
 			buy.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {
-					click(((JButton) e.getSource()).getText().toLowerCase());
+					setAction("buy");
 				}
 			});
 			sell.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {
-					click(((JButton) e.getSource()).getText().toLowerCase());
+					setAction("sell");
 				}
 			});
 			refreshTransaction.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {
-					click(((JButton) e.getSource()).getText().toLowerCase());
+					setAction("refreshtransaction");
 				}
 			});
 			cancel.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {
 //				if (activeTransaction.get())
-					action = "cancel";
+					setAction("cancel");
 				}
 			});
 			status.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {
 //				if (activeTransaction.get())
-					action = "status";
+					setAction("status");
 				}
 			});
 		}

@@ -94,8 +94,8 @@ public class Client implements Worker {
 		this.out = out;
 		this.id = id;
 		this.client = client;
-		t.setDaemon(true);
-		t.start();
+		// t.setDaemon(true);
+		// t.start();
 		Pair<ObjectInputStream, ObjectOutputStream> stream = null;
 		String okCode;
 		String operation;
