@@ -85,7 +85,7 @@ public class Server {
 			JButton save = new JButton("save");
 			JButton start = new JButton("start");
 			JButton stop = new JButton("stop");
-			JFrame frame = new JFrame("Stocks client");
+			JFrame frame = new JFrame("Server");
 			JPanel p = new JPanel();
 			frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 			frame.setSize(600, 130);
